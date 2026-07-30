@@ -1,83 +1,47 @@
-<p align="center">
-  <img src="logo.svg" width="120" alt="">
-</p>
+# jdf-skills
 
-<h1 align="center">silly-sweep</h1>
+Agent skills for keeping a codebase honest.
 
-<p align="center"><em>Sweep the silly away.</em></p>
-
----
-
-An agent skill that sweeps a codebase for code that **misleads** — and only that.
-
-Not ugly code. Not slow code. Code that tells a reader something untrue: a comment
-describing behaviour that was removed, a guard that cannot detect the thing it
-guards against, a test that passes with the implementation deleted. These cost more
-than bugs, because a bug is eventually observed and this is believed.
+Both skills here go after the same failure from opposite sides: something that
+reads as true and is not. One looks for it in code, the other in prose.
 
 ## Install
 
 ```sh
-npx skills add joaodinissf/skill-silly-sweep
+npx skills add joaodinissf/jdf-skills --all      # everything
+npx skills add joaodinissf/jdf-skills --list     # see what's here
+npx skills add joaodinissf/jdf-skills -s <name>  # just one
 ```
 
-Then ask your agent to sweep the repo, or invoke it directly:
+## Skills
 
-```
-/silly-sweep
-```
+### [`silly-sweep`](skills/silly-sweep) — sweep the silly away
 
-## What it looks for
+Finds code that **misleads**: a comment describing behaviour that was removed, a
+guard that cannot detect what it guards against, a test that passes with the
+implementation deleted. Ten categories, ranked by how confidently a reader would
+be misled. Fans out read-only agents by area and returns ranked findings.
 
-Ten categories, ranked by how confidently a reader would be misled:
+Not ugly code, not slow code — only code that tells a reader something untrue.
 
-| | |
-|---|---|
-| **Reimplemented standard library** | A hand-rolled loop doing what the language ships |
-| **Comment contradicts code** | The comment describes what the code used to do |
-| **A check that cannot fail** | A guard that passes regardless of the condition it names |
-| **A test that does not discriminate** | It passes with the implementation removed |
-| **Loudness undone at a boundary** | Returns an error; the caller logs and continues |
-| **Nondeterministic selection** | Picking from an unordered collection as if it were stable |
-| **Dead weight** | Written but never read, exported with no caller |
-| **Drifted duplication** | Copies that no longer agree — the divergence is the finding |
-| **Misleading name** | A validator that mutates, a getter that writes |
-| **Absurd construct** | A lock guarding nothing, branches that are identical |
+### [`perennial-docs`](skills/perennial-docs) — write the destination, not the path
 
-Language-agnostic by design. Nothing here names a tool, framework or version, so
-it does not rot.
+Finds documentation written as a record of the work that produced it: examples
+taken from the last thing touched, warnings about obstacles hit once, ordering
+that follows how the work happened. Such a document is usually accurate the day
+it is written, which is why it survives review, and useless a year later.
 
-## How it works
+General patterns last. Episodes rot.
 
-It discovers the repo's layout, partitions it into 6–10 areas, and fans out one
-read-only agent per area in parallel — then ranks and de-duplicates the findings.
+## Design notes
 
-It uses small fast models deliberately. This is pattern-matching over a lot of
-text, not deep reasoning, and coverage matters more than depth.
+Both skills are language- and framework-agnostic on purpose. Nothing in either
+names a version, a toolchain or a vendor, so neither needs revisiting when those
+change.
 
-## What it will not do
-
-- Run your build or test suite. It reads.
-- Report style preferences. That is your linter's job.
-- Pad. An empty result is a valid answer, and the skill says so explicitly.
-
-## Calibration
-
-The skill carries three hard-won rules, each from a real failure:
-
-**Verify claims about external things.** The most dangerous finding is one that
-calls correct code broken, because acting on it breaks something that worked. A
-sweep once declared a package-manager formula "invalid syntax" and claimed every
-build using it would fail — the line was the framework's documented idiom. Any
-claim resting on a framework's conventions must be checked against that framework,
-or downgraded to a question.
-
-**Budget hard.** A sweep without an explicit tool-call ceiling will grind for hours
-and return nothing. Ask for 15 calls and an answer, not exhaustiveness.
-
-**Use long flags.** `rg -r` is `--replace` and `-E` is `--encoding`. A pattern like
-`rg -ril foo` silently rewrites every match and looks like a result. A mangled grep
-does not fail — it invents a finding.
+Both are also written to fail quietly rather than loudly: an empty result is a
+valid answer, and both say so explicitly. A skill that must find something will
+invent something.
 
 ## Licence
 
