@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="160" height="160" role="img" aria-label="serious jester">
+  <g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- jester hat: two drooping points -->
+    <path d="M16 22 C 14 12, 22 6, 32 6 C 42 6, 50 12, 48 22" />
+    <path d="M16 22 C 10 20, 6 16, 5 11" />
+    <path d="M48 22 C 54 20, 58 16, 59 11" />
+    <!-- head -->
+    <circle cx="32" cy="38" r="17" />
+    <!-- eyes: flat, unimpressed -->
+    <path d="M24 34 h5" />
+    <path d="M35 34 h5" />
+    <!-- deadpan mouth: a perfectly straight line -->
+    <path d="M25 45 h14" />
+  </g>
+  <!-- bells -->
+  <circle cx="5" cy="11" r="2.6" fill="currentColor" />
+  <circle cx="59" cy="11" r="2.6" fill="currentColor" />
+  <!-- the only concession to being a clown -->
+  <circle cx="32" cy="40" r="3.4" fill="#e5484d" />
+</svg>
