@@ -2,8 +2,9 @@
 
 Agent skills for keeping a codebase honest.
 
-Both skills here go after the same failure from opposite sides: something that
-reads as true and is not. One looks for it in code, the other in prose.
+Each one goes after writing that costs a reader more than it gives: code that
+says something untrue, documentation that only made sense the week it was
+written, comments that repay nobody for re-reading them.
 
 ## Install
 
@@ -33,14 +34,24 @@ it is written, which is why it survives review, and useless a year later.
 
 General patterns last. Episodes rot.
 
+### [`comment-diet`](skills/comment-diet) — keep only what is load-bearing
+
+Cuts comments back to the ones that earn their place. A comment is load-bearing
+when removing it would let a competent reader make a wrong change; everything
+else is decoration, however true. Judges that per comment as its own pass, then
+routes what fails — a rejected alternative belongs in the pull request, a reason
+for the change belongs in the commit message, neither belongs in the file.
+
+The constraints survive; the argument that produced them does not.
+
 ## Design notes
 
-Both skills are language- and framework-agnostic on purpose. Nothing in either
-names a version, a toolchain or a vendor, so neither needs revisiting when those
-change.
+All three are language- and framework-agnostic on purpose. Nothing in any of
+them names a version, a toolchain or a vendor, so none needs revisiting when
+those change.
 
-Both are also written to fail quietly rather than loudly: an empty result is a
-valid answer, and both say so explicitly. A skill that must find something will
+They are also written to fail quietly rather than loudly: an empty result is a
+valid answer, and each says so explicitly. A skill that must find something will
 invent something.
 
 ## Licence
