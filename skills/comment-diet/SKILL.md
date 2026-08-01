@@ -1,6 +1,6 @@
 ---
 name: comment-diet
-description: Cut code comments down to the ones that are load-bearing — remove prose that restates the code, argues a decision already made, records the incident that prompted the change, or describes another file's behaviour. Use when a diff carries more comment than code, when asked to shorten or trim comments, when asked whether comments are load-bearing, or when told a change is over-documented or too verbose.
+description: Cut comments — in code and in configuration files alike — down to the ones that are load-bearing; remove prose that restates the code, argues a decision already made, records the incident that prompted the change, or describes another file's behaviour. Use when a diff carries more comment than code, when asked to shorten or trim comments, when asked whether comments are load-bearing, or when told a change is over-documented or too verbose.
 ---
 
 # Comment diet
@@ -57,6 +57,10 @@ guarded, beside a guard, is noise. Delete without replacement.
 belongs to. Anything about *why this changed*, *what was failing before*, or
 *why the alternative was rejected* moves to the commit message or the pull
 request. Cut it from the file; it is not lost, only correctly placed.
+Temporal phrasing is the reliable surface marker here — *no longer*, *used
+to*, *now that*, *previously* — each one a why-this-changed sentence that has
+escaped into the file, meaningful only to a reader who remembers the
+before-state.
 
 **Durability.** Does it describe something outside this file — another
 module's behaviour, a tool's defaults, what some other job does? That breaks
