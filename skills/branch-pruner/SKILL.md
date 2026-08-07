@@ -1,6 +1,6 @@
 ---
 name: branch-pruner
-description: Restore a git repository from "branches and worktrees everywhere" to a single calm checkout — delete local branches whose work is already on the default branch (detecting rebased and cherry-equivalent history, not just true merges), remove all extra worktrees when clean, and stop to ask before anything unrecoverable. Use when asked to prune branches, clean up worktrees, tidy a repo after feature work, or when told "this repo is a mess".
+description: Restore a git repository from "branches and worktrees everywhere" to a single calm checkout — delete local branches whose work is already on the default branch (detecting rebased and cherry-equivalent history, not just true merges), remove all extra worktrees when clean, and hard-stop for approval after a read-only plan (and again before anything unrecoverable). Use when asked to prune branches, clean up worktrees, tidy a repo after feature work, or when told "this repo is a mess".
 ---
 
 # Branch pruner
@@ -13,9 +13,10 @@ create and is cheap to remove — except that one of those branches holds the on
 copy of an afternoon's work, and naive cleanup cannot tell which.
 
 This skill removes everything recoverable and refuses to guess about the rest.
-Two rules carry the whole procedure: work that is already on the default branch
-needs no local branch to survive, and uncommitted changes are the one thing git
-cannot bring back.
+Three rules carry the whole procedure: work that is already on the default branch
+needs no local branch to survive; uncommitted changes are the one thing git
+cannot bring back; and **no destructive step runs until the user has seen a
+read-only plan and said go**.
 
 ## What it cleans (and what it does not)
 
@@ -40,8 +41,12 @@ git symbolic-ref refs/remotes/origin/HEAD --short
 ```
 
 If that fails (no remote, or `origin/HEAD` unset), fall back to whichever of
-`main` or `master` exists locally; if both exist, ask. Every classification
-below is relative to this branch, so getting it wrong misclassifies everything.
+`main` or `master` exists locally; if both exist, ask. Prefer the
+**remote-tracking** tip when `origin/HEAD` resolved (e.g. `origin/master`, not
+a lagging local `master`) — classification against a stale local default keeps
+every landed branch forever or invents uniqueness from the lag. Say which ref
+you used. Every classification below is relative to it, so getting it wrong
+misclassifies everything.
 
 ## Inventory
 
@@ -106,39 +111,58 @@ Never classify these as prunable at all:
 
 ## Order of operations
 
-Destructive work is sequenced so each step makes the next one safe:
+Destructive work is sequenced so each step makes the next one safe. Steps 1–2
+are **read-only**. Steps 4–7 run only after the hard stop in step 3 clears.
 
-1. **Classify** everything using the tests above.
-2. **Present the plan** before deleting anything: branches to delete (with the
+1. **Classify** everything using the tests above. Do not delete, remove, prune,
+   stash, discard, or force anything in this step.
+2. **Present the plan** (still read-only): branches to delete (with the
    evidence — ancestor, or `git cherry` clean), branches kept and why, worktrees
    to remove, dirty items needing a decision. Mass deletion without a shown plan
    is a bug in the procedure, not a style choice.
-3. **Remove clean linked worktrees** with `git worktree remove <path>`. Worktrees
+3. **Hard stop — wait for go.** End the turn after the plan. Do not run steps
+   4–7 in the same turn as the plan, and do not treat the plan itself as
+   approval. Proceed only on an explicit user go (e.g. `go`, `worktrees only`,
+   `prune only`, `branches only`, or a named subset). Silence is no. Partial
+   approval is fine; act only on what was approved. Re-present an updated plan
+   if inventory or classification changed since the last approval.
+4. **Remove clean linked worktrees** with `git worktree remove <path>`. Worktrees
    go before their branches: git refuses to delete a branch checked out in a
    worktree, and forcing that ordering leaves a worktree pointing at a ref that
    no longer exists.
-4. **Delete landed branches.** Prefer `git branch --delete`; it refuses anything
+5. **Delete landed branches.** Prefer `git branch --delete`; it refuses anything
    it cannot prove merged, which after a rebase means it refuses branches you
    have already proven landed. That refusal is expected, not a warning sign:
    when `git cherry` reported no `+` lines and the branch is in the shown plan,
    `git branch --delete --force` is the correct tool. `--force` on any branch
    *not* proven patch-equivalent discards unique commits and is only ever done
    at the user's explicit, informed request.
-5. **Tidy registrations** with `git worktree prune` — this clears stale
+6. **Tidy registrations** with `git worktree prune` — this clears stale
    bookkeeping for worktree paths that no longer exist (moved, or deleted
-   outside git); it does not touch live worktrees.
-6. **Re-run the inventory** and report the final state.
+   outside git); it does not touch live worktrees. Stale registrations may be
+   pruned as part of an approved cleanup; they still need the step-3 go (they
+   are low risk, not free license to skip the gate).
+7. **Re-run the inventory** and report the final state.
 
 Use long flags throughout (`--delete`, `--force`, `--porcelain`); short flags
 differ across git subcommands and read ambiguously in a plan the user is being
 asked to approve.
 
+## Read-only plan, then wait (the approval gate)
+
+The plan is a report, not a green light. Showing branches and worktrees that
+*would* be removed is still phase one. Phase two starts only when the user
+approves. This gate is as hard as the dirty-item stop below: classify and
+report freely; never delete, `worktree remove`, `worktree prune`, stash, or
+`--force` anything before an explicit go. Racing plan and execution in one turn
+is a procedure bug even when every item in the plan is “safe”.
+
 ## Dirty means ask
 
 A dirty worktree — or a dirty primary checkout on a branch being considered for
-deletion — is a hard stop, per item. Do not batch the question. For each one,
-show what is at stake (`git status --short`, and the diff on request) and offer
-the real options:
+deletion — is a hard stop, per item, **even after a general go**. Do not batch
+the question. For each one, show what is at stake (`git status --short`, and
+the diff on request) and offer the real options:
 
 - **stash** — `git stash push` inside that worktree, then remove it;
 - **commit** — commit to the branch, which usually reclassifies it as unique;
@@ -167,6 +191,13 @@ finding, and inventing cleanup to justify the run is worse than doing nothing.
 - **Rebase-false-unmerged.** Named above; it is the whole reason this skill is
   longer than a shell alias. Any procedure that trusts `--merged` alone fails
   the rebase workflow it will most often be run against.
+- **Plan-then-execute in one turn.** Presenting the plan does not authorize
+  deletion. Ending the turn after the plan is the control; continuing into
+  `worktree remove` / `branch --delete` without a user go is the failure mode
+  this skill exists to prevent alongside data loss.
+- **Stale local default.** Classifying against a local `main`/`master` that
+  lags `origin/*` mislabels rebased landings as unique. Use the
+  remote-tracking tip from `origin/HEAD` when it exists.
 - **Branch before worktree.** Deleting a branch that a worktree has checked out
   either fails or, forced, strands the worktree on a dead ref. Worktrees first.
 - **Force-delete as a habit.** `--force` is justified by evidence (a clean
