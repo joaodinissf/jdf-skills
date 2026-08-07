@@ -44,11 +44,25 @@ for the change belongs in the commit message, neither belongs in the file.
 
 The constraints survive; the argument that produced them does not.
 
+### [`branch-pruner`](skills/branch-pruner) — one calm checkout, nothing lost
+
+Restores a repository from "branches and worktrees everywhere" to a single calm
+checkout. Deletes local branches whose work is already on the default branch —
+detecting rebased and cherry-equivalent history, not just true merges, because
+`git branch --merged` answers wrongly for a rebase workflow. Removes all extra
+worktrees when clean, even for unmerged branches; the refs and commits survive
+in the main repository. Anything dirty is a hard stop and a per-item question.
+
+Work that landed needs no branch to survive; uncommitted work git cannot bring
+back.
+
 ## Design notes
 
-All three are language- and framework-agnostic on purpose. Nothing in any of
+The first three are language- and framework-agnostic on purpose. Nothing in
 them names a version, a toolchain or a vendor, so none needs revisiting when
-those change.
+those change. `branch-pruner` is git-specific by nature — the domain is the
+version control system — but sticks to portable git commands and pins no
+versions, clients or hosts.
 
 They are also written to fail quietly rather than loudly: an empty result is a
 valid answer, and each says so explicitly. A skill that must find something will
