@@ -56,13 +56,34 @@ in the main repository. Anything dirty is a hard stop and a per-item question.
 Work that landed needs no branch to survive; uncommitted work git cannot bring
 back.
 
+### [`uber-updater`](skills/uber-updater) — find every manager; change nothing without a yes
+
+A machine accumulates package managers the way a house accumulates keys: the
+system one, the language ones, the version managers, and several that arrived as
+a dependency of something else. Each has its own verb for *what is old*, so
+whatever its owner remembers gets updated often and everything else quietly rots.
+
+Detects every manager by probing rather than recalling, collects what each one
+reports as out of date, and tiers it by blast radius — packages, applications,
+toolchains — because a runtime moving a major version breaks things a library
+never could. Two hard stops: one to choose the scope, one to confirm the exact
+commands. What no update can fix — shadowed installs, orphans, packages needing
+removal rather than upgrade — is reported and left alone.
+
+The upgrade that breaks a machine is never the one anyone was thinking about.
+
 ## Design notes
 
 The first three are language- and framework-agnostic on purpose. Nothing in
 them names a version, a toolchain or a vendor, so none needs revisiting when
 those change. `branch-pruner` is git-specific by nature — the domain is the
 version control system — but sticks to portable git commands and pins no
-versions, clients or hosts.
+versions, clients or hosts. `uber-updater` sits furthest from that ideal by
+necessity, since its subject *is* whichever managers a machine happens to have.
+It answers by naming categories rather than products — a system manager, a
+language's global installs, a version manager — and by describing classes of
+failure rather than the packages that exhibited them, so it stays true on a
+machine sharing none of the tools that taught it.
 
 They are also written to fail quietly rather than loudly: an empty result is a
 valid answer, and each says so explicitly. A skill that must find something will
