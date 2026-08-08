@@ -65,6 +65,39 @@ Cast the net across every category, not the ones that come to mind:
 | Editor / plugin ecosystems | extension and plugin systems belonging to a specific tool |
 | Container / VM tooling | images and machines that update independently of the host |
 
+### A starting checklist
+
+Categories are what to think in; names are what to actually probe. This list is
+a floor, not a ceiling — probe everything here that could plausibly exist on the
+platform, then keep going. The manager worth finding is usually the one absent
+from any list, which is why stage 1 probes rather than recalls.
+
+| Ecosystem | Probe for |
+|---|---|
+| System (macOS) | `brew`, `port`, `nix`, `mas` |
+| System (Linux) | `apt`, `dnf`, `yum`, `pacman`, `zypper`, `apk`, `nix`, `snap`, `flatpak` |
+| System (Windows) | `winget`, `choco`, `scoop` |
+| JavaScript | `npm`, `pnpm`, `yarn`, `bun`, `deno`, `corepack` |
+| Python | `pip`, `pipx`, `uv`, `conda`, `mamba`, `poetry`, `pdm`, `hatch`, `rye` |
+| Rust | `cargo` (outdated needs `cargo-update`), `rustup` |
+| Go | `go install` targets (outdated needs a helper such as `gup`) |
+| Ruby | `gem`, `bundler` |
+| JVM | `mvn`, `gradle`, `sbt`, `sdk` (SDKMAN), `cs` (Coursier), `jbang` |
+| PHP · Perl · Lua | `composer`; `cpan`, `cpanm`; `luarocks` |
+| Haskell | `ghcup`, `cabal`, `stack` |
+| BEAM | `mix`/hex, `rebar3` |
+| .NET · Swift | `dotnet tool`; `swift package`, `mint` |
+| Other languages | `opam`, `nimble`, `pub`, `julia` (Pkg), `R` (install.packages) |
+| Version managers | `mise`, `asdf`, `nvm`, `fnm`, `volta`, `rbenv`, `pyenv`, `nodenv`, `jenv`, `tfenv` |
+| Tool ecosystems | `gh extension`, `kubectl krew`, `helm`, editor/plugin managers |
+| Vendor SDKs | cloud CLIs with private component updaters (`gcloud`, `aws`, `az`) |
+| Containers | `docker`, `podman` — images update independently of the host |
+
+Two entries in that table carry a warning worth repeating: `cargo` and `go`
+install binaries but ship **no built-in way to ask what is outdated**. Either
+use the ecosystem's helper or report the installed set without a comparison —
+never report them as clean, which is what a naive sweep does.
+
 Then record **PATH order itself**. It is the evidence for every shadowing
 question later, and it cannot be reconstructed afterwards.
 
