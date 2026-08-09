@@ -44,6 +44,14 @@ for the change belongs in the commit message, neither belongs in the file.
 
 The constraints survive; the argument that produced them does not.
 
+### [`technical-english`](skills/technical-english) — say it so it can be used
+
+Writes clear, controlled technical English inspired by ASD-STE100. It gives
+procedures one action per sentence, prefers active voice and stable terminology,
+and cuts idiom, filler, and vague claims. It applies from invocation until the
+task ends. It does not claim formal ASD-STE100 compliance without the standard's
+controlled dictionary.
+
 ### [`branch-pruner`](skills/branch-pruner) — one calm checkout, nothing lost
 
 Restores a repository from "branches and worktrees everywhere" to a single calm
