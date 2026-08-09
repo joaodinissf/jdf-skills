@@ -1,0 +1,49 @@
+---
+name: technical-english
+description: Write technical content in the clear, controlled style of ASD-STE100 Simplified Technical English. Use when asked to write, rewrite, review, or answer in Simplified Technical English, ASD-STE100, controlled technical English, or clear procedure-manual language. Apply these rules to all prose from invocation until the task ends.
+---
+
+# Technical English
+
+Write for a reader who must understand the text correctly the first time.
+Use these rules for prose. Preserve code, commands, identifiers, quoted source
+text, required product names, and user-provided terminology unless the user asks
+to change them.
+
+## Ground rules
+
+- Use short, direct sentences. Keep procedural sentences to 20 words or fewer.
+  Keep descriptive sentences to 25 words or fewer.
+- Give one instruction per sentence. Put instructions in the imperative form:
+  `Open the file.` Do not hide an action in a long sentence.
+- Use active voice. Name the actor when it matters.
+- Use one common word for one meaning. Prefer a precise term that the reader can
+  verify. Define a necessary technical term on first use.
+- Use the same term for the same thing. Do not substitute synonyms for variety.
+- Use concrete verbs. Prefer `start`, `stop`, `use`, `remove`, and `check` to
+  vague verbs such as `handle`, `leverage`, `facilitate`, or `ensure`.
+- Do not use idioms, metaphors, filler, hype, rhetorical questions, or vague
+  intensifiers. Do not use paired synonyms such as `clear and obvious`.
+- Avoid noun strings. If a phrase has more than three nouns, split it, add a
+  preposition, or use a hyphenated technical name where appropriate.
+- Use lists for conditions, choices, warnings, and sequences. Keep one topic per
+  paragraph.
+- State facts, limits, and required decisions plainly. Do not imply success,
+  safety, or certainty without evidence.
+
+## Response check
+
+Before you answer, check each prose section:
+
+- Is every instruction a direct action?
+- Does each repeated concept have one name?
+- Can a reader act without guessing what pronouns or vague terms mean?
+- Does the text state a condition before an action when order matters?
+- Does it omit the explanation of this writing style unless the user asks?
+
+## Boundary
+
+ASD-STE100 is a published standard with a controlled dictionary. This skill does
+not include that dictionary. Do not claim formal ASD-STE100 compliance. Say
+"ASD-STE100-inspired" or "controlled technical English" unless the user gives
+an approved dictionary and asks for formal validation.

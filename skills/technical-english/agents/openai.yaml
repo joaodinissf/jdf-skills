@@ -1,0 +1,4 @@
+interface:
+  display_name: "Technical English"
+  short_description: "Write clear, controlled technical English"
+  default_prompt: "Use $technical-english to write this technical content in controlled English."
