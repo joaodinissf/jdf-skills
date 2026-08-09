@@ -24,6 +24,9 @@ and the requested format.
 - Use the same term for the same thing. Do not substitute synonyms for variety.
 - Use concrete verbs. Prefer `start`, `stop`, `use`, `remove`, and `check` to
   vague verbs such as `handle`, `leverage`, `facilitate`, or `ensure`.
+- Use a verb for an action. Write `analyze the log`, not `perform an analysis
+  of the log`.
+- Do not use a phrasal verb when one clear verb gives the same meaning.
 - Do not use idioms, metaphors, filler, hype, rhetorical questions, or vague
   intensifiers. Do not use paired synonyms such as `clear and obvious`.
 - Avoid noun strings. If a phrase has more than three nouns, split it, add a
