@@ -312,3 +312,17 @@ valid and useful answer.
   something else years ago is the one furthest out of date, and the one an
   update habit built on memory will never reach. It is the reason stage 1 probes
   rather than recalls.
+- **A query that succeeds while answering a different question.** Stage 2 warns
+  that an error is not a zero; this is the subtler cousin, and it is worse
+  because nothing looks wrong. Ask a manager about a setting under the wrong
+  name and most will answer *unset* rather than *no such setting* — so a
+  protection that is present gets reported as missing, and the fix that follows
+  changes nothing or undoes something. Confirm names against the tool's own
+  documentation before concluding anything is absent, and prefer a check whose
+  result would visibly differ if the setting really were missing.
+- **Measuring the environment from inside a polluted one.** Any claim about
+  `PATH`, environment variables or shell configuration must be made from a
+  clean shell. A process that inherits an already-populated environment and
+  then re-applies the user's config will observe duplicates and orderings that
+  the user's real shell never produces. Reporting those invents work; acting on
+  them deletes configuration that was doing its job.
