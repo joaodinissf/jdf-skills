@@ -8,7 +8,8 @@ description: Write technical content in the clear, controlled style of ASD-STE10
 Write for a reader who must understand the text correctly the first time.
 Use these rules for prose. Preserve code, commands, identifiers, quoted source
 text, required product names, and user-provided terminology unless the user asks
-to change them.
+to change them. When rewriting, preserve facts, intent, necessary detail, links,
+and the requested format.
 
 ## Ground rules
 
@@ -16,7 +17,8 @@ to change them.
   Keep descriptive sentences to 25 words or fewer.
 - Give one instruction per sentence. Put instructions in the imperative form:
   `Open the file.` Do not hide an action in a long sentence.
-- Use active voice. Name the actor when it matters.
+- Use active voice when the actor is known and relevant. Otherwise, use passive
+  voice only when it makes the sentence clearer.
 - Use one common word for one meaning. Prefer a precise term that the reader can
   verify. Define a necessary technical term on first use.
 - Use the same term for the same thing. Do not substitute synonyms for variety.
@@ -27,7 +29,7 @@ to change them.
 - Avoid noun strings. If a phrase has more than three nouns, split it, add a
   preposition, or use a hyphenated technical name where appropriate.
 - Use lists for conditions, choices, warnings, and sequences. Keep one topic per
-  paragraph.
+  paragraph. Do not write more than six sentences in a paragraph.
 - State facts, limits, and required decisions plainly. Do not imply success,
   safety, or certainty without evidence.
 
