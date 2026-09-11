@@ -80,6 +80,73 @@ removal rather than upgrade — is reported and left alone.
 
 The upgrade that breaks a machine is never the one anyone was thinking about.
 
+## Favourite skills
+
+Other people's skills that earned a place in my setup. Nothing here is mine.
+
+### [`show-me`](https://github.com/humanlayer/skills/tree/main/plugins/show-me/skills/show-me) — humanlayer
+
+Explains with the smallest visual that does the job: pseudocode for logic, a call
+tree for runtime flow, a component tree for UI, a sequence diagram for ordering.
+
+Here because the failure it fixes is the one prose is worst at. A paragraph
+describing what calls what is a diagram the reader has to draw themselves.
+
+### [`ponytail`](https://github.com/DietrichGebert/ponytail) — DietrichGebert
+
+Makes the agent think like the laziest senior developer in the room: stop at the
+first rung that holds, and prefer the code you never wrote.
+
+Here for the premise, not the numbers. An independent benchmark measured roughly
+a quarter to a half of the advertised savings — about −15% code and −10% cost
+against an advertised −54% and −20%. A real effect, smaller than the README says.
+
+### [`caveman`](https://github.com/JuliusBrussee/caveman) — JuliusBrussee
+
+Strips articles, filler and hedging from replies while keeping code, commands and
+exact error text intact. Several compression levels, the deepest barely English.
+
+Here as the honest extreme of something [`comment-diet`](skills/comment-diet)
+does carefully. Worth knowing that its own rules cost 1–1.5k input tokens every
+turn, so whole-session savings land well under the advertised 65%.
+
+### [`wayfinder`](https://github.com/mattpocock/skills/tree/main/skills/engineering/wayfinder) — mattpocock
+
+Plans work too large for one session as a map issue on the real tracker, with
+child decision tickets resolved one at a time.
+
+Here because of where it puts the state. The plan is not a scratch file the agent
+keeps to itself — it is an issue the team can read, and it outlives the session
+that made it.
+
+### [`andrej-karpathy-skills`](https://github.com/multica-ai/andrej-karpathy-skills) — Forrest Chang
+
+Four rules derived from Karpathy's January 2026 notes on where agent coding goes
+wrong: think before coding, simplicity first, surgical changes, verifiable goals.
+
+Here because "surgical changes" is the rule an agent breaks most often and the
+one hardest to notice being broken. Karpathy has not endorsed it.
+
+### [`skill-creator`](https://github.com/anthropics/skills/tree/main/skills/skill-creator) — Anthropic
+
+Anthropic's own skill for writing skills, alongside the spec and a template.
+
+Here because it is the reference for the format everything in this repository is
+written in, and it settles questions about frontmatter that guessing does not.
+
+### [`asd-ste100`](https://github.com/danyuchn/asd-ste100-skill) — danyuchn
+
+Rewrites dense English into Simplified Technical English for a reader that cannot
+ask what you meant: an agent parsing a tool description, an error string or an
+inter-agent instruction.
+
+Here as the complement to [`technical-english`](skills/technical-english), not a
+replacement. Mine is a style applied to everything written from invocation
+onwards; this one is a transform that takes text and returns a rewrite. It also
+splits its rules into the ones checkable without ASD's dictionary and the ones
+that are only a direction of travel, which is a more useful admission than simply
+naming the limitation.
+
 ## Design notes
 
 The first three are language- and framework-agnostic on purpose. Nothing in
