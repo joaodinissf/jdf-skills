@@ -287,11 +287,20 @@ model check, *proved for the model* for Lean, *not modelled* for the rest. Never
   reads the jar's path from `TLA2TOOLS`.
 - **Lean 4:** `elan`, which installs `lean` and `lake`.
 
-Check with `java -version`, `test -f "$TLA2TOOLS"` and `elan toolchain list`.
-Lean is often installed with no default toolchain, and then `lean --version`
-fails although a project pinning an installed toolchain in `lean-toolchain`
-builds fine — so look for installed toolchains before concluding Lean is
-missing, and pin one of them rather than downloading another. If something is
-missing, name it and give the install command, then wait for a yes: each is a
-download onto the user's machine. Never commit the jar; keep TLC's
+Look before concluding a tool is missing — both are often installed where the
+obvious command cannot see them:
+
+- **Java.** On macOS, `/usr/bin/java` is a placeholder that reports no runtime
+  even when several are installed, because package managers keep their JDKs off
+  the `PATH`. Look in `/usr/libexec/java_home -V`, the package manager's own
+  directories (Homebrew's `opt/openjdk*`), and version managers (`mise`,
+  `sdkman`, `asdf`). Point `JAVA` at the one you pick.
+- **`tla2tools.jar`.** Search the machine for an existing copy before
+  downloading one; point `TLA2TOOLS` at it.
+- **Lean.** With no default toolchain, `lean --version` fails although a
+  project that pins an installed toolchain builds fine. List them with
+  `elan toolchain list` and pin one in `lean-toolchain`.
+
+If something is really missing, name it and give the install command, then wait
+for a yes: each is a download onto the user's machine. Never commit the jar; keep TLC's
 working directory out of the repository.
