@@ -28,7 +28,8 @@ cd Launch && lake build
 ```
 
 Pin the toolchain the project was proved with in `lean-toolchain`; proofs can
-break between Lean releases.
+break between Lean releases. Prefer one already installed (`elan toolchain
+list`), written exactly as listed, e.g. `leanprover/lean4:v4.35.0-rc2`.
 
 ## A model to copy
 
@@ -120,7 +121,7 @@ theorem inv_init : Inv init := rfl
 theorem inv_step {s s' : State} {e : Event}
     (h : Inv s) (hs : step true s e = some s') : Inv s' := by
   obtain ⟨phase, n⟩ := s
-  cases e <;> cases phase <;> simp_all [step, Inv]
+  cases e <;> cases phase <;> simp [step] at hs <;> subst hs <;> simp_all [Inv]
 
 theorem inv_run : ∀ (es : List Event) (s s' : State),
     Inv s → run true s es = some s' → Inv s'
