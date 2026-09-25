@@ -80,6 +80,19 @@ removal rather than upgrade — is reported and left alone.
 
 The upgrade that breaks a machine is never the one anyone was thinking about.
 
+### [`counterexample`](skills/counterexample) — let the checker find the bug
+
+A test checks the orderings someone thought of; a model checker checks all of
+them. Models the part of a codebase where order matters — several actors racing,
+a response lost after the other side acted, a fold over an event log — in
+**TLA+** when actors interleave or **Lean 4** when one state machine or pure
+function must hold for every input, choosing per target. A counterexample counts
+only once it reproduces as a failing test in the real code; a clean run is
+reported as *no counterexample up to size N*, never as *verified*.
+
+Leaves a `specs/` directory and a script that reruns every model, trace replay
+and proof, so the evidence outlives the session.
+
 ## Favourite skills
 
 Other people's skills that earned a place in my setup. Nothing here is mine.
@@ -186,7 +199,10 @@ necessity, since its subject *is* whichever managers a machine happens to have.
 It answers by naming categories rather than products — a system manager, a
 language's global installs, a version manager — and by describing classes of
 failure rather than the packages that exhibited them, so it stays true on a
-machine sharing none of the tools that taught it.
+machine sharing none of the tools that taught it. `counterexample` names its two
+formalisms because they are its method, not its subject; everything it says
+about the code under test is phrased as runtime semantics — an event loop,
+a lock, a transaction — rather than as any one framework.
 
 They are also written to fail quietly rather than loudly: an empty result is a
 valid answer, and each says so explicitly. A skill that must find something will
