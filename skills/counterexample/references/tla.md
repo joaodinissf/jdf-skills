@@ -162,9 +162,20 @@ TraceNext == \/ /\ i < Len(Traces[t])
 ```
 
 `:>` and `@@` build a function from pairs; they come from the `TLC` module.
-The trace config uses `INIT TraceInit`, `NEXT
-TraceNext`, the main model's constants, `w1 = w1` and `w2 = w2`, and
-`Workers = {w1, w2}`. Keep deadlock checking on.
+The trace config:
+
+```
+INIT TraceInit
+NEXT TraceNext
+CONSTANTS
+    w1 = w1
+    w2 = w2
+    Workers = {w1, w2}
+    Fixed = TRUE
+```
+
+`w1 = w1` makes each name a model value the traces can refer to. Keep deadlock
+checking on: it is what reports a trace the model cannot follow.
 
 Pin every variable in every trace state. A variable the trace leaves free lets
 TLC choose a branch the code did not take and report a replay that never
