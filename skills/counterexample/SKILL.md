@@ -287,7 +287,11 @@ model check, *proved for the model* for Lean, *not modelled* for the rest. Never
   reads the jar's path from `TLA2TOOLS`.
 - **Lean 4:** `elan`, which installs `lean` and `lake`.
 
-Check with `java -version`, `test -f "$TLA2TOOLS"` and `lake --version`. If
-something is missing, name it and give the install command, then wait for a yes:
-each is a download onto the user's machine. Never commit the jar; keep TLC's
+Check with `java -version`, `test -f "$TLA2TOOLS"` and `elan toolchain list`.
+Lean is often installed with no default toolchain, and then `lean --version`
+fails although a project pinning an installed toolchain in `lean-toolchain`
+builds fine — so look for installed toolchains before concluding Lean is
+missing, and pin one of them rather than downloading another. If something is
+missing, name it and give the install command, then wait for a yes: each is a
+download onto the user's machine. Never commit the jar; keep TLC's
 working directory out of the repository.
