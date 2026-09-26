@@ -36,9 +36,25 @@ does not invent an implementation to satisfy that step.
 |---|---|
 | [`SKILL.md`](SKILL.md) | always — scope, workflow and evidence rules |
 | [`references/tla.md`](references/tla.md) | modelling and checking a target in TLA+ |
-| [`references/lean.md`](references/lean.md) | modelling and proving properties in Lean |
-| [`references/modelling-targets.md`](references/modelling-targets.md) | choosing a boundary or investigating a failure |
+| [`references/lean.md`](references/lean.md) | modelling, searching and proving properties in Lean |
+| [`references/modelling-targets.md`](references/modelling-targets.md) | surveying a codebase, choosing a boundary or recognizing a failure class |
+| [`references/simplifying.md`](references/simplifying.md) | removing code a checked property shows to be redundant |
+| [`references/output.md`](references/output.md) | laying out the model, its README and the report |
 | [`scripts/check.sh`](scripts/check.sh) | copied into the target repository to rerun formal checks |
+| [`scripts/find-tools.sh`](scripts/find-tools.sh) | finding an installed Java, TLC jar and Lean toolchain; writes nothing |
+
+## Related
+
+[opum-ai/proof-skills](https://github.com/opum-ai/proof-skills) (MIT) packages
+the same model, counterexample, reproduce and fix loop as four Claude Code
+skills with more automation: a library of checked TLA+ and Lean patterns,
+install scripts, a TLC wrapper that turns traces into code-mapped tables, a
+drift checker for model-to-code pointers, CI templates, and a generated HTML
+report. Reach for it when you want that tooling. This skill is smaller,
+depends on neither it nor its scripts, and differs in stance: it treats
+understanding and specifying a system as complete outcomes, labels where each
+property came from, and words results as bounded checks or proofs about a model
+rather than as verification of the code.
 
 ## Credits
 
@@ -51,6 +67,15 @@ Two MIT-licensed skills shaped the original procedures:
   properties from intent, check reachability, and reproduce defects before fixes.
 - [`yavosh/skills` `formal-verify`](https://github.com/yavosh/skills): runtime
   atomicity, trace replay, before/after comparisons and rerunnable checks.
+
+Several procedures were adapted, in new words and code, from ideas in
+[opum-ai/proof-skills](https://github.com/opum-ai/proof-skills) (MIT, v0.1.1):
+searching a Lean model's small instances for counterexamples before proving,
+recording properties before the first check and reporting later changes,
+pairing results with expected-failure configurations, the failure-class
+catalogue, simplifying code from checked properties, surveying a codebase
+before modelling several boundaries, and extending trace replay to partial logs.
+No text or code was copied.
 
 The revision follows
 [Anthropic's Skill Creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator):

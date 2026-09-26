@@ -4,12 +4,14 @@ For one actor's state machine that must keep an invariant for every length of
 run, and for pure functions with a crisp property. Where TLC checks every state
 of a small instance, Lean checks the proposition actually stated. A theorem
 quantified over all runs can be unbounded, but finite types or hypotheses may
-still restrict it. A failed proof attempt alone is not a counterexample.
+still restrict it. A failed proof attempt alone is not a counterexample; a
+search over the executable model can find one.
 
 ## Contents
 
 - Project layout
 - A model to copy
+- Searching for a counterexample
 - The counterexample, before the fix
 - The invariant, after the fix
 - Replaying real traces
@@ -30,7 +32,12 @@ cd Launch && lake build
 
 Pin the toolchain the project was proved with in `lean-toolchain`; proofs can
 break between Lean releases. Prefer one already installed (`elan toolchain
-list`), written exactly as listed, e.g. `leanprover/lean4:v4.35.0-rc2`.
+list`, or `scripts/find-tools.sh`), written exactly as listed, e.g.
+`leanprover/lean4:v4.35.0-rc2`. If none is installed and the user authorizes
+it, elan installs into the home directory without administrator rights
+(Homebrew's `elan-init` formula, or the installer script from the elan
+repository with `--no-modify-path`); `lake build` then fetches the pinned
+toolchain.
 
 ## A model to copy
 
@@ -91,10 +98,69 @@ def run (fixed : Bool) : State → List Event → Option State
       | none => none
 ```
 
+## Searching for a counterexample
+
+Because `step` is an executable function, the model can search itself. A
+breadth-first search over event sequences from `init` finds the shortest
+sequence reaching a bad state — the Lean counterpart of a TLC trace. This is
+the fast way to test a property before trying to prove it: a search finds most
+false claims in seconds, while a failed proof says only that no proof was found.
+
+```lean
+def Event.all : List Event := [.authorize, .startOk, .startLost, .reject, .reconcile]
+
+/-- The outcome of a bounded search. Only `exhausted` means every reachable state was seen. -/
+inductive Search where
+  | found (events : List Event)
+  | exhausted (states : Nat)
+  | outOfFuel
+  deriving DecidableEq, Repr
+
+/-- Breadth-first search from `init` for a state where `bad` holds; `found` carries a
+    shortest event list. `fuel` bounds the number of states expanded. -/
+def search (fixed : Bool) (bad : State → Bool) (fuel : Nat) : Search :=
+  go fuel [(init, [])] [init]
+where
+  go : Nat → List (State × List Event) → List State → Search
+    | _, [], seen => .exhausted seen.length
+    | 0, _, _ => .outOfFuel
+    | f + 1, (s, path) :: queue, seen =>
+      if bad s then .found path.reverse
+      else
+        let fresh := Event.all.filterMap fun e =>
+          (step fixed s e).bind fun t => if t ∈ seen then none else some (t, e :: path)
+        go f (queue ++ fresh) (seen ++ fresh.map (·.1))
+
+#eval search false (fun s => s.executions ≥ 2) 1000
+-- Launch.Search.found [authorize, startLost, authorize, startOk]
+#eval search true (fun s => s.executions ≥ 2) 1000
+-- Launch.Search.exhausted 5
+```
+
+Read the three outcomes differently:
+
+- **`found`** is a candidate. Restate the event list as a theorem (next
+  section) so the kernel checks it against `step`, then treat it like a TLC
+  trace: a design finding, or an implementation candidate to reproduce.
+- **`exhausted`** means the search saw every reachable state of this finite
+  model. `theorem … : search true bad 1000 = .exhausted 5 := by decide` makes
+  the kernel rerun it. That certifies what this search function returned, not
+  that the search is correct; keep the invariant proof as the claim for the
+  model, and report the search as a check.
+- **`outOfFuel`** is inconclusive: the state space is larger than the bound,
+  often because a counter grows without limit. Bound the counter in `bad`, add
+  fuel, or rely on the proof.
+
+Keep instances small (two actors, one or two items), as with TLC; the list-based
+search slows sharply as states grow. When the model is a relation rather than a
+function, write an executable successor function beside it and prove that each
+of its moves is a permitted step, so the search and the proofs describe the
+same model. A predicate that is `Prop` needs a `Bool` form for the search.
+
 ## The counterexample, before the fix
 
-The Lean form of a TLC trace: a concrete event list, and a proof that it
-reaches the bad state. For an implementation finding, attempt the same four events in the real code.
+The Lean form of a TLC trace: a concrete event list, usually the one the search
+found, and a proof that it reaches the bad state. For an implementation finding, attempt the same four events in the real code.
 For a design, this is evidence against its stated property; no implementation
 is required to demonstrate that design behaviour.
 
@@ -153,6 +219,13 @@ induction, then the headline property as a corollary. If `inv_step` will not clo
 strengthening, the model or property may be wrong, or the proof may simply be
 unfinished. Strengthening the induction hypothesis must still follow from the
 initial state and be preserved by every permitted step.
+
+The unclosed goal names a state that satisfies `Inv` but whose successor does
+not. Ask whether that state is reachable: run `search` with the negated
+invariant, or with the goal's hypotheses as `bad`. If it is reachable, the
+property is false. If not, name the fact that excludes it and add it to `Inv`.
+Before proving a strengthened `Inv`, check it on every reachable state with the
+search; a conjunct that fails there cannot be proved.
 
 Further proofs may be useful when the question calls for them:
 
@@ -233,3 +306,11 @@ check script rejects both.
   toolchain; the pinned `lean-toolchain` is part of the proof.
 - A theorem's name is a claim. Reviewers read names; make each one say exactly
   what the statement proves.
+- `partial def` cannot be unfolded in proofs, so a theorem about one says
+  almost nothing. Use structural recursion or fuel, as `search` does.
+- `@[implemented_by]`, `@[extern]` and `unsafe` make the compiled behaviour
+  differ from what the kernel checked. Keep them out of anything a theorem
+  mentions.
+- If `decide` exceeds elaboration limits on a larger finite check, `decide
+  +kernel` asks the kernel directly and adds no axiom; shrink the instance
+  before reaching for anything that trusts the compiler.

@@ -5,6 +5,37 @@ for both proposed designs and existing systems. The failure cases suggest
 behaviours to include; they are not claims that a defect must exist. Use the fix
 shapes only after a property and its violation are established.
 
+## Failure classes at a glance
+
+| Class | Typical shape | Section |
+|---|---|---|
+| Check-then-act, lost update | read, decide, write back without rechecking | Durable state machines; Threads |
+| Async interleaving | a fact checked before an `await` and used after it | Single-threaded async |
+| Retries and idempotency | a redelivered request or a retry repeats an effect | Two systems that must agree; Processes |
+| Leases and fencing | a paused holder acts after its lease was reclaimed | Durable state machines |
+| Deadlock and lost wakeup | opposite lock orders; a notify nobody is waiting for | Threads |
+| Data-flow loss, duplication or stall | the last partial batch never flushed | Pipelines and streams |
+| Illegal state transition | `paid → cancelled` from a read-decide-write handler | Durable state machines |
+| Dependency scheduling | a task dispatched before its dependencies finish | Schedulers and dependency graphs |
+| Divergent views | two folds, two tabs or an index disagreeing with the source | Event logs; User interfaces |
+
+## Surveying a codebase
+
+For a broad request such as "find bugs in this codebase", the model is not the
+first step. Survey the code for shared mutable state and the places it is
+changed: locks, `async` functions, threads and channels, queues, caches,
+retries, timers, transactions, status columns, webhook and message handlers,
+schedulers. Rank candidate boundaries by consequence (money, data loss, stuck
+work) and by how much interleaving or partial failure they admit. Propose the
+top few, each with a one-line risk, and let the user choose; if told to
+proceed, take the highest-ranked.
+
+Model each chosen boundary independently, with its own directory, properties
+and checks. Separate boundaries can be modelled in parallel, for example by
+subagents, when the environment and the user allow it; merge their findings
+only after each has been classified. Report the boundaries surveyed but not
+modelled, so silence is not read as a clean result.
+
 ## Durable state machines
 
 Which transitions are legal, who owns a claim, and what permits recovery?
@@ -18,7 +49,15 @@ sweeper, a reaper, a reconciler.
 - A side effect performed before the status write that retires it — a crash in
   between repeats the side effect on restart.
 - A lease whose correctness depends on timing (`work time < lease time`) with
-  nothing enforcing it.
+  nothing enforcing it. Model expiry as an action that can happen at any
+  moment, including while the holder is paused; the classic failure is a stale
+  holder committing after another claimed the work.
+- A transition decided from a status read earlier (`if status == pending:
+  … status = cancelled`) while another handler moves the same record.
+- A claim or conditional update whose atomicity depends on the isolation level.
+  Under read committed, `UPDATE … WHERE id = (SELECT … LIMIT 1)` can let two
+  workers take the same row; model the statements separately or state the
+  isolation assumption.
 - An error ignored on a status write, so the state and the world disagree.
 - A fan-out saved one row per statement instead of in one transaction.
 
@@ -80,6 +119,8 @@ Which operations are atomic, and what ordering prevents interference or deadlock
   `compute`, `putIfAbsent` or `LoadOrStore` exists.
 - Two locks taken in different orders; a callback or channel send while holding
   a lock.
+- A lost wakeup: a notify sent before the waiter waits, or a wait not
+  re-checking its condition in a loop after waking.
 - Close or release not in a `finally`/`defer`; a channel closed twice.
 - Sync-over-async (`.Result`, `.Wait()`) and fire-and-forget tasks.
 - An atomic load followed by an atomic store where a compare-and-swap is needed.
@@ -94,6 +135,43 @@ Which messages establish durable facts, and which assumptions permit progress?
   heartbeat treated as proof of failure.
 - A fail-closed path with no way out: a claim that stays pending forever after
   one lost write.
+
+## Pipelines and streams
+
+Is every item delivered exactly once, in order where order matters, and does
+the pipeline always drain?
+
+A producer, a bounded queue or channel, batching or windowing stages, a sink.
+
+- The last partial batch never flushed at end of stream. This violates no
+  safety property — nothing wrong is ever emitted — so only a liveness property
+  such as "every accepted item is eventually delivered" catches it. Pair each
+  "nothing bad" property with a "something good eventually".
+- Items lost or duplicated where a stage retries, fans out or restarts.
+- Unbounded buffering where backpressure was assumed.
+- A consumer that stops on one poison item and stalls everything behind it.
+
+Useful properties: the output is a prefix of the input (safety), the output
+eventually equals the input (liveness), the output is a permutation of the
+input (after fan-out and fan-in).
+
+## Schedulers and dependency graphs
+
+Does each task run only after its dependencies, exactly once, and does the
+schedule always finish?
+
+Build systems, workflow engines, job DAGs, garbage collectors' mark phases.
+
+- Readiness computed from dependencies *started* rather than *finished*.
+- A task run twice after a worker failure and retry.
+- A scheduler stuck because a failed task's dependants wait forever.
+- A cycle check racing an edge insertion.
+
+Check every small graph in one run: let the initial state choose any edge set on
+three or four nodes, restricted to acyclic ones where the property needs it,
+instead of hand-picking a graph. For a property of all graphs, prove it in Lean;
+the safety of dependency-respecting dispatch typically needs no acyclicity,
+while progress does.
 
 ## User interfaces
 
@@ -124,3 +202,7 @@ satisfy both safety and progress.
 | one lock order; no callback under a lock | no deadlock |
 | version or sequence comparison instead of arrival order | a newer fact is never overwritten |
 | an explicit escape from every pending state | nothing stuck forever |
+| a fencing token checked by the store on every write | a stale lease holder cannot commit |
+| wait in a loop on the condition, notify under the same lock | no lost wakeup |
+| flush on end of stream and on shutdown | no lost tail |
+| readiness from finished dependencies only | no premature dispatch |
