@@ -8,7 +8,7 @@ breadth-first search). Bounds apply to the model, not the whole system.
 ## Contents
 
 - A model to copy
-- Configurations: after, before, sanity
+- Configurations: every result with a check that can fail
 - Running TLC and reading its output
 - Replaying real traces
 - Liveness
@@ -79,6 +79,9 @@ TypeOK == /\ status \in {"pending", "claimed"}
 
 AtMostOneSend == sends <= 1                       \* intent: design/jobs.md
 EventuallyDone == <>Terminated
+
+\* Reachability, expected to be violated: some worker does send.
+NeverSends == sends = 0
 ====
 ```
 
@@ -87,12 +90,26 @@ and TLC reports a deadlock. Allowing stutter *only* once the system is finished
 keeps deadlock checking on, so a genuinely stuck state is still reported.
 Prefer this to `CHECK_DEADLOCK FALSE`, which hides stuck states too.
 
-## Configurations: after, before, sanity
+## Configurations: every result with a check that can fail
 
-Use one normal configuration when checking a single design or a clean
-implementation. Keep alternative, before/after and reachability configurations
-only when they answer a question. Here the two variants make the example's
-failure and correction reproducible.
+A passing configuration is evidence only if the same model can fail. Give each
+headline result an expected-failure companion, and keep both in `specs/checks`
+so a later edit that blinds the model shows up as a mismatch:
+
+| Companion | Shows | Expected result |
+|---|---|---|
+| Reachability | the states the property talks about occur at all | `fail:<ReachabilityInvariant>` |
+| Before/after | the property detects the defect the fix removes | `fail:<Property>` with the fix off |
+| Planted weakening | the property detects a plausible defect in a clean system or a design | `fail:<Property>` with one guard weakened |
+
+Use before/after only when there is a real before: a reproduced defect, or two
+design alternatives. For a clean implementation or a single design, plant a
+weakening in a separate configuration or parameter, and label it planted; it
+tests the check, not the system. Every model needs at least the reachability
+companion. Name the expected violation (`fail:AtMostOneSend`), not just `fail`:
+a companion that fails for another reason does not test what it claims.
+
+For the worked example:
 
 `Claim.cfg` — the fixed code; expected to pass:
 
@@ -106,14 +123,25 @@ INVARIANT AtMostOneSend
 PROPERTY EventuallyDone
 ```
 
-`ClaimBefore.cfg` — the same with `Fixed = FALSE`; expected to fail on
-`AtMostOneSend`. Keep it: it proves the model can see the bug the fix removes.
+`ClaimBefore.cfg` — the same with `Fixed = FALSE`; expected
+`fail:AtMostOneSend`. `ClaimReach.cfg` — `Fixed = TRUE` with only
+`INVARIANT NeverSends`; expected `fail:NeverSends`. If TLC reports
+`NeverSends` as holding, the model never reaches the interesting states.
 
-The reachability check is a temporary invariant that must be
-violated, for example `NeverSends == sends = 0` added to a scratch config. If
-TLC reports it as holding, the model never reaches the interesting states.
+Also run the passing configuration once with `-coverage 1`. Each action is
+listed with the `distinct:total` states it produced; an action at `0:0` never
+fired, so its guard is contradictory or unreachable at these bounds. A
+stuttering disjunct such as `Terminated` legitimately adds no distinct states.
 
 ## Running TLC and reading its output
+
+Find an installed Java and `tla2tools.jar` first with
+[`../scripts/find-tools.sh`](../scripts/find-tools.sh). If there is none and
+the user authorizes an install, a pinned release of `tla2tools.jar` from the
+`tlaplus/tlaplus` GitHub releases, placed in `~/.local/share/tla/` (the check
+script's default), needs no administrator rights; it needs Java 11 or later.
+Homebrew has no TLC formula, only the `tla+-toolbox` IDE cask, whose bundled
+jar can lag the current release.
 
 ```bash
 cd specs/Claim
@@ -196,6 +224,21 @@ Pin every variable in every trace state. A variable the trace leaves free lets
 TLC choose a branch the code did not take and report a replay that never
 happened. For long logs, generate the `Traces` definition from the log with a
 small script rather than by hand.
+
+When full states cannot be logged:
+
+- **Partial states.** Constrain only the logged variables. Acceptance then
+  means *some* values of the unlogged variables are consistent with the log;
+  report it with that weaker wording.
+- **Unlogged actions.** Allow at most a stated number of model steps between two
+  logged ones, and report the bound. An unbounded gap accepts almost any trace.
+- **Several threads or processes.** Order events at the point each takes
+  effect: a global sequence number from an atomic counter within one process,
+  or logical clocks merged in causal order across processes. Wall-clock
+  timestamps from different machines do not give an order.
+
+The reverse direction is also useful: generate behaviours from the model with
+`-simulate` and replay them against the implementation as tests.
 
 ## Liveness
 

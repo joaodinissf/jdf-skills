@@ -4,15 +4,18 @@
 #
 # One check per line, whitespace-separated; '#' starts a comment:
 #
-#   kind  path                    config           expect  note
-#   tla   Claim/Claim.tla         Claim.cfg        pass    compare-and-set claim
-#   tla   Claim/Claim.tla         ClaimBefore.cfg  fail    the code before the fix
-#   lean  lean/Launch             Audit.lean       pass    proofs and axiom audit
+#   kind  path                    config           expect              note
+#   tla   Claim/Claim.tla         Claim.cfg        pass                compare-and-set claim
+#   tla   Claim/Claim.tla         ClaimBefore.cfg  fail:AtMostOneSend  the code before the fix
+#   tla   Claim/Claim.tla         ClaimReach.cfg   fail:NeverSends     reachability
+#   lean  lean/Launch             Audit.lean       pass                proofs and axiom audit
 #
 # Paths are relative to this directory; a TLA+ config sits beside its spec.
-# expect is pass or fail. An expected fail passes only on a real violation
-# (invariant, action property, deadlock or liveness), never on a broken model.
-# Lean checks only pass: a counterexample in Lean is a theorem that builds.
+# expect is pass, fail or fail:<what>. An expected fail passes only on a real
+# violation, never on a broken model. <what> names the violated invariant or
+# action property, or is deadlock or liveness; prefer it to a bare fail, which
+# accepts any violation. Lean checks only pass: a counterexample in Lean is a
+# theorem that builds.
 #
 # Environment: TLA2TOOLS (path to tla2tools.jar), JAVA (default: java).
 # Pass check files as arguments to run those instead of ./checks.
@@ -42,7 +45,8 @@ run_tla() { # spec config -> pass | fail | error, plus a detail line
   if grep -q 'No error has been found' <<<"$out"; then
     echo "pass ${states:-}"
   elif grep -Eq 'is violated|Deadlock reached|Temporal properties were violated' <<<"$out"; then
-    echo "fail $(grep -Eo '(Invariant|Action property) [A-Za-z0-9_]+|Deadlock reached|Temporal properties were violated' <<<"$out" | head -1)"
+    echo "fail $(grep -Eo '(Invariant|Action property) [A-Za-z0-9_]+|Deadlock reached|Temporal properties were violated' <<<"$out" |
+      head -1 | sed -E 's/^(Invariant|Action property) //; s/^Deadlock reached$/deadlock/; s/^Temporal.*/liveness/')"
   else
     echo "error $(grep -Em1 'Error|error|Exception' <<<"$out" | cut -c1-120)"
   fi
@@ -81,8 +85,9 @@ for file in "${files[@]}"; do
       *) result="error unknown kind $kind" ;;
     esac
     got=${result%% *} detail=${result#"$got"}
+    [ "$got" = fail ] && [ "${expect#fail:}" != "$expect" ] && got="fail:${detail# }"
     if [ "$got" = "$expect" ]; then mark=ok; else mark=MISMATCH; mismatches=$((mismatches + 1)); fi
-    printf '%-8s %-5s %-32s %-22s expect %-4s got %-5s %s%s\n' \
+    printf '%-8s %-5s %-32s %-22s expect %-18s got %-18s %s%s\n' \
       "$mark" "$kind" "$path" "$config" "$expect" "$got" "${note:-}" "${detail:+ —$detail}"
   done <"$file"
 done

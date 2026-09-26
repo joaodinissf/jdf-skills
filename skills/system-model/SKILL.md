@@ -1,6 +1,6 @@
 ---
 name: system-model
-description: Model a system's behaviour in TLA+ or Lean, make its assumptions explicit, and check its properties. Use for understanding or comparing stateful designs, specifying workflows or protocols before implementation, checking existing state machines and pure functions, and discovering concurrency, retry, recovery or data-flow defects without needing a suspected bug. Leaves a runnable model and evidence with stated limits; reproduces implementation defects and fixes them when requested. Not for architecture diagrams alone or behaviour a direct unit test already settles.
+description: Model a system's behaviour in TLA+ or Lean, make its assumptions explicit, and check its properties. Use for understanding or comparing stateful designs, specifying workflows or protocols before implementation, checking existing state machines and pure functions, discovering concurrency, retry, recovery or data-flow defects without needing a suspected bug, and simplifying code a checked property shows to be redundant. Use when someone asks to "formally verify" or "prove this is correct", asks whether something has a race condition, deadlock or lost update, or mentions TLA+, TLC, PlusCal, Lean or model checking. Leaves a runnable model and evidence with stated limits; reproduces implementation defects and fixes them when requested. Not for architecture diagrams alone or behaviour a direct unit test already settles.
 ---
 
 # System model
@@ -28,6 +28,7 @@ Identify the subject and intended outcome from the request:
 | Check properties or compare designs | The model plus checked properties, counterexamples or proofs, and implications for each alternative |
 | Find implementation bugs | The checks plus attempted reproduction of candidate defects; distinguish confirmed bugs from unresolved findings |
 | Fix defects | The above plus scoped fixes and regression evidence |
+| Simplify using the model | The property that makes a guard, lock or flag redundant, its assumptions, a recheck without it, and the change if requested ([`references/simplifying.md`](references/simplifying.md)) |
 
 These are outcomes of one workflow, not separate mandatory passes. Run basic
 model sanity checks even for an understanding task; pursue deeper checking only
@@ -36,11 +37,19 @@ authorize product changes. Do not require a suspected bug to begin.
 
 With a supplied target, stay within it. Without one, survey intent and behaviour,
 then select a small, consequential boundary and explain the choice. Start with
-one model; add another only when it answers a distinct question. Use
-[`references/modelling-targets.md`](references/modelling-targets.md) to identify
-useful boundaries and failure cases, not as a quota of bugs to find. If a direct
-test or explanation settles the question, say so rather than manufacturing a
-formal-methods project.
+one model; add another only when it answers a distinct question. For an
+explicitly broad request, such as finding bugs across a codebase, rank candidate
+boundaries and model a few independently. Use
+[`references/modelling-targets.md`](references/modelling-targets.md) to survey,
+choose boundaries and recognize failure classes, not as a quota of bugs to find:
+
+- a status checked before an `await` and written after it;
+- a retry that repeats a remote effect after a lost response;
+- a worker that commits after its lease was reclaimed;
+- a pipeline that never flushes its last partial batch.
+
+If a direct test or explanation settles the question, say so rather than
+manufacturing a formal-methods project.
 
 Ask when an unresolved requirement would materially change the conclusion.
 Otherwise record the assumption and proceed. When two plausible interpretations
@@ -68,7 +77,10 @@ Before formal syntax, record:
 Label each property's source: **intent** (a requirement or user statement),
 **inferred** (suggested by existing behaviour), or **proposed** (a design choice
 not yet agreed). Cite the source. An inferred or proposed property that fails
-may reveal a decision to make rather than a defect to fix.
+may reveal a decision to make rather than a defect to fix. Write the properties
+down before the first check runs; from then on, report any change to a
+property, hypothesis, constraint, fairness condition or bound, with its reason
+([`references/output.md`](references/output.md)).
 
 Distinguish state invariants such as "at most one owner", other safety
 properties such as "every acknowledgement follows a durable write", and
@@ -93,7 +105,8 @@ choice and read only the relevant reference:
 TLC can produce a counterexample automatically. An unsuccessful Lean proof
 attempt is inconclusive: it might reflect a false claim, a weak induction
 hypothesis, or a proof the agent has not found. To refute a property in Lean,
-construct a witness and prove that it violates the property.
+search the executable model's small instances for a violating event sequence,
+then prove that the sequence violates the property; search before proving.
 
 ## 3. Build a faithful abstraction
 
@@ -133,24 +146,27 @@ In every case:
 
 ## 4. Validate the model before trusting its results
 
-A model can pass because it never reaches the behaviour under discussion.
-Check normal outcomes and important failure or recovery states. In TLC, a
-separate reachability check can assert that a desired state is never reached
-and expect a violation. In Lean, prove that a concrete event sequence reaches
-it. Keep these expected failures separate from the system's obligations.
+A model can pass because it never reaches the behaviour under discussion, or
+because its property could not fail. Give each headline result an
+expected-failure companion, kept with the model's checks but separate from the
+system's obligations:
+
+- **Reachability**, always: the states the property talks about occur. In
+  TLC, assert they never occur and expect that named violation; in Lean,
+  prove a concrete event sequence reaches them.
+- **Before/after**, when a real defect or design alternative exists: the
+  property fails with the fix off.
+- **Planted weakening**, for a clean system or single design: weaken one guard
+  in a separate configuration and expect the property to fail. It checks the
+  test setup; it is not a discovered defect.
 
 Where existing code can run, replay observed traces through the model or compare
 function outputs on shared inputs. Trace acceptance is evidence of correspondence,
 not a proof of equivalence. A rejected trace needs investigation: the model,
 instrumentation, mapping or implementation may disagree with the stated design.
 Report what was observed and how much was checked; do not silently filter out
-inconvenient traces.
-
-For an unimplemented design, exercise scenarios drawn from the requirements and
-label them **constructed**, not observed. Check that the model permits required
-behaviour and that at least one meaningful bad behaviour would be detected—for
-example, by deliberately weakening a guard in a separate sanity configuration.
-A planted failure checks the test setup; it is not a discovered design defect.
+inconvenient traces. For an unimplemented design, exercise scenarios drawn from
+the requirements and label them **constructed**, not observed.
 
 Review the abstraction against its sources and its omissions. When independent
 review is available and authorized, give the reviewer the sources, model and
@@ -203,44 +219,20 @@ system just to satisfy the example layout.
 
 ## 7. Leave a model others can use
 
-Use the repository's existing convention, or `specs/`:
-
-```
-specs/
-  README.md             index of questions and models
-  checks                runnable checks with expected outcomes
-  check.sh              copied from this skill's scripts/check.sh
-  <Name>/               TLA+ model, configurations and explanation
-  lean/<Name>/          Lean project, Audit.lean and explanation
-```
-
-Copy [`scripts/check.sh`](scripts/check.sh) when these tool checks fit. A row
-expecting `fail` succeeds only on a genuine tool-reported violation, not a parse
-error; inspect the named violation as well to ensure it is the intended check.
-Add replay helpers, regression tests or alternative configurations only when
-used. Keep runtime caches and downloaded tool binaries out of the repository.
-
-Each model's explanation records its question, design or implementation subject,
-states and transitions, property sources, assumptions and omissions, source
-mapping, exact rerun instructions, validation evidence, findings and open
-questions. Include checked bounds or theorem hypotheses. Distinguish constructed
-scenarios from observed traces and clean checks from unfinished work.
-
-Offer an agent-instructions note about maintaining models with the relevant
-code or design; add it only if requested. Do not claim the models stay current
-without a maintenance step.
+Put models in the repository's existing convention, or `specs/`, with
+[`scripts/check.sh`](scripts/check.sh) and a `checks` file listing every check
+and companion with its expected outcome. Each model's README records its
+question, subject, sourced properties and their changes, source mapping,
+numbered assumptions, rerun instructions, validation evidence, findings and open
+questions. [`references/output.md`](references/output.md) gives the layout and
+README structure. Keep runtime caches and tool binaries out of the repository.
+Offer a maintenance note for agent instructions; add it only if requested.
 
 ## 8. Report what was learned
 
-Lead with the answer to the user's question. Then give:
-
-- **Model:** the boundary, key behaviours and assumptions it makes explicit.
-- **Evidence:** checked properties or theorems, configurations, bounds or
-  hypotheses, reachability and correspondence results, and unfinished checks.
-- **Findings:** design decisions, counterexamples, confirmed implementation
-  defects, scoped fixes and unresolved candidates, clearly distinguished.
-- **Limits and reuse:** what is excluded, what the evidence does not establish,
-  and where to find and rerun the model.
+Lead with the answer to the user's question; then the model, the evidence, the
+findings (clearly distinguished by kind) and the limits, as in
+[`references/output.md`](references/output.md).
 
 Use *no counterexample in the checked finite instance* for exhaustive TLC runs,
 *proved for this model under these hypotheses* for Lean, and *not checked* for
@@ -252,12 +244,15 @@ a complete result.
 TLC needs Java and `tla2tools.jar`; the check script reads `JAVA` and
 `TLA2TOOLS`. Lean uses `lean` and `lake`, commonly managed by `elan`.
 
-Check existing installations before proposing a download. On macOS, the system
-Java launcher may fail while a package-managed JDK works; inspect the active
-path and known package/version-manager locations. Look for an existing TLC jar
-in configured or project tool directories. For Lean, list installed toolchains
-with `elan toolchain list` and prefer an existing one, even if no default is set.
+Check existing installations before proposing a download:
+[`scripts/find-tools.sh`](scripts/find-tools.sh) looks in the usual places and
+prints the exports (`--deep` also searches the home directory). On macOS, the
+system Java launcher may fail while a package-managed JDK works. For Lean,
+prefer an installed toolchain even if no default is set, and pin it.
 
 If a required tool is unavailable, explain the gap and follow the user's
 installation authorization. A model can still be drafted and reviewed, but
-label it unexecuted until the check has actually run.
+label it unexecuted until the check has actually run. The references say
+where an authorized install can go without administrator rights.
+
+[opum-ai/proof-skills](https://github.com/opum-ai/proof-skills) is a separate, more automated toolkit for the same loop; this skill does not require it.
