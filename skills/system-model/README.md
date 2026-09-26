@@ -41,7 +41,6 @@ does not invent an implementation to satisfy that step.
 | [`references/simplifying.md`](references/simplifying.md) | removing code a checked property shows to be redundant |
 | [`references/output.md`](references/output.md) | laying out the model, its README and the report |
 | [`scripts/check.sh`](scripts/check.sh) | copied into the target repository to rerun formal checks |
-| [`scripts/find-tools.sh`](scripts/find-tools.sh) | finding an installed Java, TLC jar and Lean toolchain; writes nothing |
 
 ## Related
 

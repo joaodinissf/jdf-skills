@@ -135,8 +135,12 @@ stuttering disjunct such as `Terminated` legitimately adds no distinct states.
 
 ## Running TLC and reading its output
 
-Find an installed Java and `tla2tools.jar` first with
-[`../scripts/find-tools.sh`](../scripts/find-tools.sh). If there is none and
+Find an installed `tla2tools.jar` first. `TLA2TOOLS` may be set only in the
+user's interactive shell, so an agent's shell can see it unset. Copies usually
+live under `~/.local/share/*/` or `~/.local/share/*/*/` (for example
+`tlaplus/<version>/`), `~/.cache/`, the TLA+ Toolbox app bundle, a TLA+ editor
+extension's `tools/` directory, or a project's own tool directory. A single
+`fd -H -I -g tla2tools.jar ~` finds any of them in seconds. If there is none and
 the user authorizes an install, a pinned release of `tla2tools.jar` from the
 `tlaplus/tlaplus` GitHub releases, placed in `~/.local/share/tla/` (the check
 script's default), needs no administrator rights; it needs Java 11 or later.

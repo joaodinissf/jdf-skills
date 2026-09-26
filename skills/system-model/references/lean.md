@@ -32,7 +32,7 @@ cd Launch && lake build
 
 Pin the toolchain the project was proved with in `lean-toolchain`; proofs can
 break between Lean releases. Prefer one already installed (`elan toolchain
-list`, or `scripts/find-tools.sh`), written exactly as listed, e.g.
+list`), written exactly as listed, e.g.
 `leanprover/lean4:v4.35.0-rc2`. If none is installed and the user authorizes
 it, elan installs into the home directory without administrator rights
 (Homebrew's `elan-init` formula, or the installer script from the elan
