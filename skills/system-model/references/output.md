@@ -17,7 +17,9 @@ Copy [`../scripts/check.sh`](../scripts/check.sh) when these tool checks fit.
 List every expected-failure companion in `checks` with the violation it must
 produce (`fail:NeverSends`), so a later edit that blinds the model shows up as
 a mismatch. A bare `fail` accepts any violation; use it only when the tool does
-not name one. Add replay helpers, regression tests or alternative
+not name one. List replay, differential and drift scripts as `cmd` rows too:
+otherwise the model's own checks stay green after the code they describe
+changes. Add replay helpers, regression tests or alternative
 configurations only when used. Keep runtime caches, TLC state directories and
 downloaded tool binaries out of the repository.
 
