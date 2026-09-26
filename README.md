@@ -147,6 +147,16 @@ splits its rules into the ones checkable without ASD's dictionary and the ones
 that are only a direction of travel, which is a more useful admission than simply
 naming the limitation.
 
+### [`impeccable`](https://github.com/pbakaus/impeccable) — Paul Bakaus
+
+Gives the agent a vocabulary for frontend design: critique the hierarchy, distill
+a crowded page, polish the details. Builds on Anthropic's frontend-design skill
+with guidance on typography, colour, layout, motion and interaction, plus checks
+for recurring design anti-patterns.
+
+Here because “make it look better” leaves the agent guessing. A named design
+problem is easier to fix than a request to make something prettier.
+
 ## Design notes
 
 The first three are language- and framework-agnostic on purpose. Nothing in
