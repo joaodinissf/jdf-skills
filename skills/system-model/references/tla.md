@@ -2,7 +2,8 @@
 
 For targets where several actors interleave. TLC, the model checker in
 `tla2tools.jar`, explores every reachable state of a small instance and prints
-the shortest path to any state that breaks an invariant.
+a trace to a state that breaks an invariant (a shortest trace with the default
+breadth-first search). Bounds apply to the model, not the whole system.
 
 ## Contents
 
@@ -17,8 +18,12 @@ the shortest path to any state that breaks an invariant.
 
 ## A model to copy
 
-Two workers claim one job. The code reads the status, awaits something, then
-writes; the fix makes the write conditional on the status it read.
+This worked example compares two ways for workers to claim one job: a separate
+read and unconditional write, and a conditional write that rechecks the status.
+It can represent a design alternative or a reproduced implementation fix.
+The source locations below are illustrative; replace them with actual source
+mappings, or requirement identifiers for a design model. The `Fixed` parameter
+belongs to this comparison, not to every model.
 
 ```tla
 ---- MODULE Claim ----
@@ -73,7 +78,7 @@ TypeOK == /\ status \in {"pending", "claimed"}
           /\ sends \in 0..Cardinality(Workers)
 
 AtMostOneSend == sends <= 1                       \* intent: design/jobs.md
-EventuallyDone == <>(\A w \in Workers : pc[w] /= "read" /\ pc[w] /= "claimed")
+EventuallyDone == <>Terminated
 ====
 ```
 
@@ -83,6 +88,11 @@ keeps deadlock checking on, so a genuinely stuck state is still reported.
 Prefer this to `CHECK_DEADLOCK FALSE`, which hides stuck states too.
 
 ## Configurations: after, before, sanity
+
+Use one normal configuration when checking a single design or a clean
+implementation. Keep alternative, before/after and reachability configurations
+only when they answer a question. Here the two variants make the example's
+failure and correction reproducible.
 
 `Claim.cfg` — the fixed code; expected to pass:
 
@@ -99,7 +109,7 @@ PROPERTY EventuallyDone
 `ClaimBefore.cfg` — the same with `Fixed = FALSE`; expected to fail on
 `AtMostOneSend`. Keep it: it proves the model can see the bug the fix removes.
 
-The reachability check from stage 5 is a temporary invariant that must be
+The reachability check is a temporary invariant that must be
 violated, for example `NeverSends == sends = 0` added to a scratch config. If
 TLC reports it as holding, the model never reaches the interesting states.
 
@@ -128,6 +138,11 @@ Report the `distinct states found` figure with every result; it is the size of
 the evidence.
 
 ## Replaying real traces
+
+Use this for observations from an implementation. For a design with no code,
+exercise requirement scenarios instead and label them constructed. Neither a
+few accepted traces nor hand-written scenarios establish equivalence to an
+implementation.
 
 A trace is a list of observed states, one per modelled transition, logged from
 a test or a real run. The replay spec walks the model along the trace; if the
@@ -185,11 +200,16 @@ small script rather than by hand.
 ## Liveness
 
 Safety says nothing bad happens; liveness says something good eventually does.
-Liveness needs fairness, or TLC will find the trivial counterexample where the
-system simply stops. `WF_vars(A)` says: if `A` stays enabled, it eventually
-happens. Put fairness only on actions the real system is obliged to take —
-a retry loop, a reconciler — never on the environment (crashes, lost
-responses), or the model assumes the failures politely stop.
+Liveness usually needs scheduling or environment assumptions to rule out
+behaviours that make progress impossible. `WF_vars(A)` says: if `A` stays
+enabled, it eventually happens. State which actions the scheduler must serve;
+fairness of the whole `Next` does not generally prevent starvation of one actor.
+The finite example above only needs some non-stuttering progress to terminate.
+
+Environment assumptions such as eventual delivery can be legitimate contractual
+conditions, but must be explicit and justified. Also check what remains true
+without them. Do not add fairness to failure actions in an attempt to make
+failures stop; model recovery assumptions directly.
 
 A liveness counterexample is a lasso: states that lead into a loop the system
 can repeat forever. Explain the loop in the report; it is usually a retry that
@@ -199,8 +219,11 @@ never gives up or two actors undoing each other.
 
 In order of preference:
 
-1. Shrink the constants. Two actors and one item find most bugs.
-2. Bound counters with a `CONSTRAINT` (`CONSTRAINT sends <= 2`).
+1. Shrink the constants while preserving the behaviour in question. Small
+   instances are a starting point, not a completeness guarantee.
+2. Define a bound such as `WithinBound == sends <= 2` in the module and use
+   `CONSTRAINT WithinBound` in the configuration. This truncates exploration;
+   report it and do not infer unbounded safety or progress from that run.
 3. Declare actors symmetric (`SYMMETRY Perms` with
    `Perms == Permutations(Workers)`, from the `TLC` module). Not sound with
    liveness properties — use it only for safety runs.
@@ -211,8 +234,9 @@ In order of preference:
 
 When each actor is a sequential procedure with many waiting points, PlusCal —
 an algorithm language that translates to TLA+ — is often easier to keep
-faithful: each label is one atomic step, which maps directly onto "the code
-between two `await`s". Write the algorithm in a comment block in the `.tla`
+faithful: each label is one atomic step. Match labels to the subject's actual atomicity;
+code between two `await`s is atomic only relative to other tasks on that same
+cooperative loop, not to external processes or stores. Write the algorithm in a comment block in the `.tla`
 file and translate it with:
 
 ```bash

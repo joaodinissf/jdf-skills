@@ -1,0 +1,52 @@
+{
+  "skill_name": "system-model",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We have not implemented this delivery workflow yet. Model the proposal in delivery-design.md, compare it with the stable-ID alternative, and tell me which guarantees depend on unresolved assumptions. Leave a runnable model and explanation; do not implement the service.",
+      "expected_output": "A design model with explicit assumptions, checked safety and qualified progress claims, constructed scenarios, and design findings rather than invented implementation bugs or source traces.",
+      "files": [
+        "evals/files/delivery-design.md"
+      ],
+      "expectations": [
+        "The artifact contains a runnable formal model and executed checks for the proposed workflow and stable-ID alternative.",
+        "The report distinguishes a design counterexample from a confirmed implementation bug and does not fabricate implementation source locations or observed traces.",
+        "The original workflow has a demonstrated duplicate-notification behaviour, and the stable-ID result explicitly depends on remote deduplication semantics.",
+        "Progress claims state scheduling and recovery/delivery assumptions or explicitly remain unverified.",
+        "No service implementation is created, and a useful model plus explanation remains available."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Model lifecycle.py so we can understand its behaviour and check the contract in lifecycle-contract.md. I have no suspected bug. Leave a runnable model that we can maintain alongside the code; do not change the implementation.",
+      "expected_output": "A faithful model of all transitions including no-ops, reachability and implementation correspondence evidence, checked at-most-once and absorbing terminal properties, no fabricated defect, and no unpromised completion guarantee.",
+      "files": [
+        "evals/files/lifecycle.py",
+        "evals/files/lifecycle-contract.md"
+      ],
+      "expectations": [
+        "A runnable formal model covers start, finish, cancel and ignored/duplicate events, with executed checks.",
+        "The at-most-one-start and absorbing-terminal properties are supported by actual model checks or completed proofs, with their limits stated.",
+        "The model demonstrates a reachable running or terminal outcome and compares at least one observed implementation trace or shared-input result.",
+        "No defect or unconditional eventual-completion guarantee is invented.",
+        "The input lifecycle.py remains byte-for-byte unchanged and rerun instructions are supplied."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use a formal model to check worker.py against worker-contract.md, and fix any implementation defect you can reproduce. Leave the model and a deterministic regression test. Keep the scope to this in-memory workflow.",
+      "expected_output": "A model that retains the suspension gap, a concrete interleaving, a failing real-code reproducer, a scoped fix, passing regression and before/after model evidence with explicit bounds.",
+      "files": [
+        "evals/files/worker.py",
+        "evals/files/worker-contract.md"
+      ],
+      "expectations": [
+        "The model preserves the before_claim suspension gap and produces a concrete duplicate-send counterexample.",
+        "A deterministic real-code test or reproducer fails on the original for the modelled reason.",
+        "A scoped fix passes the same regression test without timing sleeps.",
+        "Before/after formal results and relevant source mappings support the reported fix.",
+        "The final report respects the one-event-loop contract and distinguishes model bounds from implementation evidence."
+      ]
+    }
+  ]
+}
