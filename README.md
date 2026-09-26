@@ -160,6 +160,34 @@ splits its rules into the ones checkable without ASD's dictionary and the ones
 that are only a direction of travel, which is a more useful admission than simply
 naming the limitation.
 
+### [`impeccable`](https://github.com/pbakaus/impeccable) — Paul Bakaus
+
+Gives the agent a vocabulary for frontend design: critique the hierarchy, distill
+a crowded page, polish the details. Builds on Anthropic's frontend-design skill
+with guidance on typography, colour, layout, motion and interaction, plus checks
+for recurring design anti-patterns.
+
+One skill, with focused commands. `audit` reports technical issues in
+accessibility, performance, theming and responsive behaviour; `critique` reviews
+visual hierarchy, clarity and usability, with priorities for what to improve.
+`distill` removes clutter, `clarify` improves UI copy, `typeset` refines typography,
+and `polish` finishes an existing interface within its design system.
+
+Here because “make it look better” leaves the agent guessing. A named design
+problem is easier to fix than a request to make something prettier.
+
+After [installation](https://impeccable.style/docs/), run `/impeccable init` in
+agent chat to capture project context. Then name the page or component:
+
+```text
+/impeccable audit the checkout form
+/impeccable critique the checkout form
+/impeccable polish the checkout form
+```
+
+Use `audit` or `critique` to review, then `polish` to make refinements. In Codex,
+use `$impeccable` in place of `/impeccable`.
+
 ## Design notes
 
 The first three are language- and framework-agnostic on purpose. Nothing in
