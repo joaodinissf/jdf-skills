@@ -28,11 +28,15 @@ files=("$@")
 [ ${#files[@]} -gt 0 ] || files=("$here/checks")
 
 run_tla() { # spec config -> pass | fail | error, plus a detail line
-  local spec=$1 config=$2 dir out
+  local spec=$1 config=$2 dir out metadir
   dir=$(dirname "$spec")
+  metadir=$(mktemp -d "${TMPDIR:-/tmp}/system-model-tlc.XXXXXX") || {
+    echo "error cannot create TLC working directory"; return;
+  }
   out=$(cd "$here/$dir" && "$java" -XX:+UseParallelGC -cp "$jar" tlc2.TLC \
-    -workers auto -cleanup -metadir "${TMPDIR:-/tmp}/tlc-$$-$(basename "$spec" .tla)" \
+    -workers auto -cleanup -metadir "$metadir" \
     -config "$config" "$(basename "$spec")" 2>&1)
+  rm -rf -- "$metadir"
   local states
   states=$(grep -Eo '[0-9,]+ distinct states found' <<<"$out" | tail -1)
   if grep -q 'No error has been found' <<<"$out"; then

@@ -1,10 +1,13 @@
-# Where these bugs live
+# Useful modelling boundaries
 
-Shapes to look for in the survey, and the fixes that usually restore the
-invariant. Grouped by the kind of state, not by language, because the same
-shape turns up in every stack.
+Start with the question the model should answer. These boundaries are useful
+for both proposed designs and existing systems. The failure cases suggest
+behaviours to include; they are not claims that a defect must exist. Use the fix
+shapes only after a property and its violation are established.
 
 ## Durable state machines
+
+Which transitions are legal, who owns a claim, and what permits recovery?
 
 A status column, a claim, a lease, a `locked_until`, a `next_attempt`, a
 sweeper, a reaper, a reconciler.
@@ -21,9 +24,10 @@ sweeper, a reaper, a reconciler.
 
 ## Two systems that must agree
 
+What does each side know after a partial failure, and how is agreement restored?
+
 A database and a queue, an event log and a workflow engine, a local record and a
-remote API. The most productive target class: each side is correct and the pair
-is not.
+remote API. Each side may be locally correct while their interaction violates the contract.
 
 - **The lost response.** The remote acted, the reply never arrived, and the
   caller records a failure — then retries or lets someone start again. Model the
@@ -44,6 +48,8 @@ per logical attempt; an outbox or a reconciler for the second write.
 
 ## Event logs folded into state
 
+Which facts determine state, and what changes under duplication or reordering?
+
 - *Latest* decided by arrival order where it should be by version or sequence.
 - A duplicate event applied twice by a fold that is not idempotent.
 - A later event that should supersede an earlier one but is not consulted
@@ -52,6 +58,8 @@ per logical attempt; an outbox or a reconciler for the second write.
 - Sequence or epoch numbers reused after a restart.
 
 ## Single-threaded async (JavaScript, TypeScript, Python)
+
+Which facts can change across suspension points or in another process?
 
 - State checked before an `await` and acted on after it.
 - A queue, map or lock that serialises work *within one process*, relied on as
@@ -63,6 +71,8 @@ per logical attempt; an outbox or a reconciler for the second write.
   breaks out mid-flush.
 
 ## Threads (Go, Java, .NET and kin)
+
+Which operations are atomic, and what ordering prevents interference or deadlock?
 
 - Check-then-act across a lock release; read under a read lock, write under the
   write lock without checking again.
@@ -76,6 +86,8 @@ per logical attempt; an outbox or a reconciler for the second write.
 
 ## Processes talking to each other
 
+Which messages establish durable facts, and which assumptions permit progress?
+
 - An acknowledgement sent before the thing acknowledged is durable.
 - At-least-once delivery into a handler that is not idempotent.
 - Liveness signals (heartbeats) mistaken for correctness signals, or a missing
@@ -84,6 +96,8 @@ per logical attempt; an outbox or a reconciler for the second write.
   one lost write.
 
 ## User interfaces
+
+Which user and server events may interleave, and which actions should remain available?
 
 A UI is a state machine too, driven by the user and by the server at once.
 
@@ -95,11 +109,16 @@ A UI is a state machine too, driven by the user and by the server at once.
 
 ## Fix shapes
 
+These are hypotheses to check, not automatic repairs. For example, retiring a
+record before an external side effect can prevent duplicates but lose the effect
+on a crash; a durable intent plus idempotency and recovery may be needed to
+satisfy both safety and progress.
+
 | Shape | Restores |
 |---|---|
 | compare-and-set on the status the writer read | no lost update, at most one claimant |
 | one transaction for the whole change | no half-done state |
-| retire the state before the side effect, or record intent first | no repeated side effect after a crash |
+| durable intent, stable idempotency identity and recovery | retry without losing or duplicating the external effect, under the stated remote contract |
 | the same idempotency key on every retry of one attempt | at most one remote execution |
 | reconcile by asking the remote, never by assuming | agreement after a lost response |
 | one lock order; no callback under a lock | no deadlock |

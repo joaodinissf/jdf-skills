@@ -80,18 +80,21 @@ removal rather than upgrade — is reported and left alone.
 
 The upgrade that breaks a machine is never the one anyone was thinking about.
 
-### [`counterexample`](skills/counterexample) — let the checker find the bug
+### [`system-model`](skills/system-model) — make the behaviour explicit
 
-A test checks the orderings someone thought of; a model checker checks all of
-them. Models the part of a codebase where order matters — several actors racing,
-a response lost after the other side acted, a fold over an event log — in
-**TLA+** when actors interleave or **Lean 4** when one state machine or pure
-function must hold for every input, choosing per target. A counterexample counts
-only once it reproduces as a failing test in the real code; a clean run is
-reported as *no counterexample up to size N*, never as *verified*.
+Models a workflow, protocol, state machine or pure function so its assumptions
+can be examined and its properties checked. Works from existing code or a
+proposed design, using **TLA+** to explore interleavings and **Lean 4** to prove
+properties of the model. No suspected bug is needed; a useful model can explain
+why a system works, where its guarantees end, or which decision is still missing.
 
-Leaves a `specs/` directory and a script that reruns every model, trace replay
-and proof, so the evidence outlives the session.
+A design counterexample can change a proposal before there is code to test.
+An implementation defect is called confirmed only once it reproduces against
+the real code. Fixes follow the requested scope, and every result names its
+assumptions and limits.
+
+Leaves a `specs/` directory with the model, its explanation and rerunnable
+checks, so the understanding survives the session.
 
 ## Favourite skills
 
@@ -199,9 +202,9 @@ necessity, since its subject *is* whichever managers a machine happens to have.
 It answers by naming categories rather than products — a system manager, a
 language's global installs, a version manager — and by describing classes of
 failure rather than the packages that exhibited them, so it stays true on a
-machine sharing none of the tools that taught it. `counterexample` names its two
+machine sharing none of the tools that taught it. `system-model` names its two
 formalisms because they are its method, not its subject; everything it says
-about the code under test is phrased as runtime semantics — an event loop,
+about the system under study is phrased as behaviour — a state transition,
 a lock, a transaction — rather than as any one framework.
 
 They are also written to fail quietly rather than loudly: an empty result is a
