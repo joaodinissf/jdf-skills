@@ -1,6 +1,6 @@
 ---
 name: system-model
-description: Model a system's behaviour in TLA+ or Lean, make its assumptions explicit, and check its properties. Use for understanding or comparing stateful designs, specifying workflows or protocols before implementation, checking existing state machines and pure functions, discovering concurrency, retry, recovery or data-flow defects without needing a suspected bug, and simplifying code a checked property shows to be redundant. Use when someone asks to "formally verify" or "prove this is correct", asks whether something has a race condition, deadlock or lost update, or mentions TLA+, TLC, PlusCal, Lean or model checking. Leaves a runnable model and evidence with stated limits; reproduces implementation defects and fixes them when requested. Not for architecture diagrams alone or behaviour a direct unit test already settles.
+description: Model a system's behaviour in TLA+ or Lean, make its assumptions explicit, and check its properties. Use for understanding or comparing stateful designs, specifying workflows or protocols before implementation, checking existing state machines and pure functions, and discovering concurrency, retry, recovery or data-flow defects without needing a suspected bug. Use when someone asks to "formally verify" or "prove this is correct", asks whether something has a race condition, deadlock or lost update, or mentions TLA+, TLC, PlusCal, Lean or model checking. Leaves a runnable model and evidence with stated limits; reproduces implementation defects and fixes them when requested. Not for architecture diagrams alone or behaviour a direct unit test already settles.
 ---
 
 # System model
@@ -244,11 +244,12 @@ a complete result.
 TLC needs Java and `tla2tools.jar`; the check script reads `JAVA` and
 `TLA2TOOLS`. Lean uses `lean` and `lake`, commonly managed by `elan`.
 
-Check existing installations before proposing a download:
-[`scripts/find-tools.sh`](scripts/find-tools.sh) looks in the usual places and
-prints the exports (`--deep` also searches the home directory). On macOS, the
-system Java launcher may fail while a package-managed JDK works. For Lean,
-prefer an installed toolchain even if no default is set, and pin it.
+Check existing installations before proposing a download. On macOS, the system
+Java launcher may fail while a package-managed JDK works; inspect the active
+path and known package/version-manager locations. Search for an existing TLC
+jar before calling it missing; [`references/tla.md`](references/tla.md) lists
+where copies usually live. For Lean, list installed toolchains with `elan
+toolchain list` and prefer an existing one, even if no default is set.
 
 If a required tool is unavailable, explain the gap and follow the user's
 installation authorization. A model can still be drafted and reviewed, but

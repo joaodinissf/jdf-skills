@@ -47,6 +47,54 @@
         "Before/after formal results and relevant source mappings support the reported fix.",
         "The final report respects the one-event-loop contract and distinguishes model bounds from implementation evidence."
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "TLC passes on our spec in claim.tla with claim.cfg. Tell me whether that result means claim.py is safe against claim-contract.md, and leave the model in a state we can rerun. Do not change claim.py.",
+      "expected_output": "Recognition that the passing run is vacuous (Claim never fires), a corrected model that reaches the duplicate send, a named reachability check that would have caught the vacuity, and no safety or defect claim about claim.py from the model alone.",
+      "files": [
+        "evals/files/claim.tla",
+        "evals/files/claim.cfg",
+        "evals/files/claim.py",
+        "evals/files/claim-contract.md"
+      ],
+      "expectations": [
+        "Detects that the Claim action never fires or the send state is unreachable (via a reachability check or coverage), and does not report the passing run as evidence of safety.",
+        "Corrects the model and shows the duplicate send is then reachable.",
+        "Leaves an expected-failure check that would have caught the vacuity, naming the violation it expects.",
+        "Treats the implementation race as a candidate unless reproduced against claim.py, and does not claim claim.py is safe or unsafe on the strength of the model alone.",
+        "claim.py remains byte-for-byte unchanged and rerun instructions are supplied."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Prove the claim in retry-claim.md about retry.py in Lean. If it is false, show me why.",
+      "expected_output": "A concrete sequence of send outcomes that makes deliver call send more than max_retries + 1 times, stated and proved as a Lean theorem, with any corrected claim labelled as a different statement.",
+      "files": [
+        "evals/files/retry.py",
+        "evals/files/retry-claim.md"
+      ],
+      "expectations": [
+        "Produces a concrete sequence of send outcomes (involving throttled errors) that violates the claim.",
+        "A Lean theorem stating that violation builds, with no sorry and no native_decide.",
+        "Does not present an unfinished or failed proof attempt as the answer.",
+        "Any corrected or weakened claim that is proved is labelled as a different statement from the one asked.",
+        "The report distinguishes the model's result from behaviour of retry.py itself, and states how the model corresponds to the code."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Use a formal model to check worker.py against worker-contract.md, and fix any implementation defect you can reproduce. Leave the model and a deterministic regression test. Keep the scope to this in-memory workflow. Installing or downloading tools is not authorized.",
+      "expected_output": "The same outcome as case 3 where the tools are installed, found without being told where they are; otherwise an exact account of where it looked and a model labelled unexecuted.",
+      "files": [
+        "evals/files/worker.py",
+        "evals/files/worker-contract.md"
+      ],
+      "expectations": [
+        "Locates an installed Java and TLC jar (or Lean toolchain) without being given their paths, or states exactly where it looked before concluding one is missing.",
+        "Does not claim a model check ran unless one did, and installs nothing.",
+        "If the tools are present, the model check and the regression test run as in case 3."
+      ]
     }
   ]
 }
