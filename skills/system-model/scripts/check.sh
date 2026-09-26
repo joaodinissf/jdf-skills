@@ -9,13 +9,16 @@
 #   tla   Claim/Claim.tla         ClaimBefore.cfg  fail:AtMostOneSend  the code before the fix
 #   tla   Claim/Claim.tla         ClaimReach.cfg   fail:NeverSends     reachability
 #   lean  lean/Launch             Audit.lean       pass                proofs and axiom audit
+#   cmd   lean/Launch             replay.sh        pass                model agrees with the code
 #
 # Paths are relative to this directory; a TLA+ config sits beside its spec.
 # expect is pass, fail or fail:<what>. An expected fail passes only on a real
 # violation, never on a broken model. <what> names the violated invariant or
 # action property, or is deadlock or liveness; prefer it to a bare fail, which
 # accepts any violation. Lean checks only pass: a counterexample in Lean is a
-# theorem that builds.
+# theorem that builds. A cmd check runs an executable (replay, differential
+# test, drift check) from its directory and passes when it exits 0; it only
+# passes, because a failing command cannot be told apart from a broken one.
 #
 # Environment: TLA2TOOLS (path to tla2tools.jar), JAVA (default: java).
 # Pass check files as arguments to run those instead of ./checks.
@@ -73,6 +76,16 @@ run_lean() { # project audit -> pass | error, plus a detail line
   if [ -n "$bad" ]; then echo "error disallowed axioms:$bad"; else echo "pass"; fi
 }
 
+run_cmd() { # directory command -> pass | error, plus a detail line
+  local dir=$here/$1 out
+  [ -x "$dir/$2" ] || { echo "error $2 is missing or not executable"; return; }
+  if out=$(cd "$dir" && "./$2" 2>&1); then
+    echo "pass $(tail -1 <<<"$out" | cut -c1-80)"
+  else
+    echo "error exit $?: $(tail -1 <<<"$out" | cut -c1-100)"
+  fi
+}
+
 total=0 mismatches=0
 for file in "${files[@]}"; do
   [ -f "$file" ] || { echo "no such check file: $file" >&2; exit 2; }
@@ -82,6 +95,7 @@ for file in "${files[@]}"; do
     case $kind in
       tla) result=$(run_tla "$path" "$config") ;;
       lean) result=$(run_lean "$path" "$config") ;;
+      cmd) result=$(run_cmd "$path" "$config") ;;
       *) result="error unknown kind $kind" ;;
     esac
     got=${result%% *} detail=${result#"$got"}
