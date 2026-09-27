@@ -1,5 +1,5 @@
 {
   "image": "export-dialog.png",
-  "note": "Accessibility frame of the Export button as reported by the app (includes its drop shadow).",
+  "note": "Accessibility frame of the Export button, as reported by the app.",
   "export_button": [516, 318, 96, 36]
 }
