@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>composition</title>
+<style>
+  /* Fonts: system fonts differ between machines. For anything delivered, embed
+     the face so every render uses it:
+     @font-face { font-family: "Display"; font-weight: 700;
+       src: url("fonts/display-700.woff2") format("woff2"); }   (or a data: URL) */
+  :root {
+    --ground: #101114;
+    --surface: #1a1c21;
+    --ink: #f3f1ec;
+    --muted: #9b9fa6;
+    --accent: #ff6b3d;
+  }
+  html, body { margin: 0; background: #000; }
+  #stage {
+    position: relative; overflow: hidden;
+    width: 1920px; height: 1080px;          /* the frame: render.py sizes output from this box */
+    background: var(--ground); color: var(--ink);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    transform-origin: 0 0;
+  }
+  .safe { position: absolute; inset: 100px 120px; display: flex; flex-direction: column; justify-content: center; }
+  #headline { margin: 0; font-size: 104px; font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; }
+  #headline .w { display: inline-block; margin-right: 0.24em; }
+  #headline .hero { color: var(--accent); }
+  #rule { width: 360px; height: 10px; margin: 48px 0 40px; background: var(--accent); transform-origin: 0 50%; }
+  #sub { margin: 0; font-size: 48px; color: var(--muted); }
+  /* Everything seek() moves or fades: keeps Chrome's layer choices, and so the
+     pixels, the same whichever frame was drawn before. */
+  .w, #rule, #sub { will-change: transform, opacity; }
+  .preview-only { position: fixed; left: 12px; bottom: 10px; font: 13px ui-monospace, monospace; color: #888; }
+  .render .preview-only { display: none; }
+</style>
+</head>
+<body>
+<!-- Build the finished, fully visible layout first; seek(t) then moves it in and out of that state. -->
+<main id="stage">
+  <div class="safe">
+    <h1 id="headline"><span class="w">Every</span><span class="w">frame</span><span class="w">is</span><span class="w">a</span><span class="w">function</span><span class="w">of</span><span class="w hero">time.</span></h1>
+    <div id="rule"></div>
+    <p id="sub">Seek to any moment and get the same picture.</p>
+  </div>
+</main>
+<div class="preview-only" id="clock"></div>
+
+<script>
+// ---- helpers: all time in seconds ------------------------------------------
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const lerp = (a, b, p) => a + (b - a) * p;
+
+// CSS-style cubic-bezier(x1, y1, x2, y2) as a function of progress 0..1.
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = (s) => ((ax * s + bx) * s + cx) * s;
+  const Y = (s) => ((ay * s + by) * s + cy) * s;
+  return (x) => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let lo = 0, hi = 1, s = x;
+    for (let i = 0; i < 40; i++) { if (X(s) < x) lo = s; else hi = s; s = (lo + hi) / 2; }
+    return Y(s);
+  };
+}
+const ease = {
+  out: bezier(0.16, 1, 0.3, 1),       // arrivals
+  inOut: bezier(0.83, 0, 0.17, 1),    // moves from one place to another
+  in: bezier(0.7, 0, 0.84, 0),        // departures
+  linear: (x) => x,                   // opacity crossfades and constant drift only
+};
+
+// Eased, clamped progress through [start, start + dur].
+const at = (t, start, dur, e = ease.out) => e(clamp01((t - start) / dur));
+
+// Spring from 0 to 1 released at `start`: closed form, so any t can be asked
+// directly. w = stiffness as angular frequency (rad/s), z = damping ratio
+// (1 = no overshoot, 0.7 = a slight one). Settles in roughly 4 / (z * w) s.
+function spring(t, start, w = 14, z = 0.85) {
+  const s = t - start;
+  if (s <= 0) return 0;
+  if (z >= 1) return 1 - Math.exp(-w * s) * (1 + w * s);
+  const wd = w * Math.sqrt(1 - z * z);
+  return 1 - Math.exp(-z * w * s) * (Math.cos(wd * s) + (z * w / wd) * Math.sin(wd * s));
+}
+
+// Keyframes [[time, value, easeInto?], ...] sorted by time; holds before and after.
+function track(t, keys) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    const [t1, v1, e = ease.inOut] = keys[i];
+    const [t0, v0] = keys[i - 1];
+    if (t < t1) return lerp(v0, v1, e((t - t0) / (t1 - t0)));
+  }
+  return keys[keys.length - 1][1];
+}
+
+// Seeded random numbers: call at setup, never inside seek, so frames repeat.
+function rng(seed) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---- the composition --------------------------------------------------------
+window.DURATION = 6;  // seconds; loops cleanly because 0 and 6 are both empty
+
+const $ = (s) => document.querySelector(s);
+const words = [...document.querySelectorAll('#headline .w')];
+
+window.seek = function seek(t) {
+  const exit = at(t, 4.9, 0.45, ease.in);          // exits are quicker than entrances
+
+  words.forEach((el, i) => {
+    const p = spring(t, 0.3 + i * 0.07, 15, 0.8);  // stagger 70 ms per word
+    el.style.opacity = clamp01(p * 1.5) * (1 - exit);
+    el.style.transform = `translateY(${lerp(70, 0, p) - 50 * exit}px) scale(${lerp(0.94, 1, p)})`;
+  });
+
+  const draw = at(t, 1.05, 0.7, ease.inOut);
+  $('#rule').style.transform = `scaleX(${draw * (1 - exit)})`;
+
+  const sub = at(t, 1.35, 0.6);
+  $('#sub').style.opacity = sub * (1 - exit);
+  $('#sub').style.transform = `translateY(${lerp(24, 0, sub) - 30 * exit}px)`;
+
+  // Keep the hold alive: a slow drift on the hero word while nothing else moves.
+  const hero = words[words.length - 1];
+  hero.style.transform += ` translateY(${3 * Math.sin((2 * Math.PI * t) / 3)}px)`;
+};
+
+// ---- preview (skipped when rendering with ?render) --------------------------
+(() => {
+  const params = new URLSearchParams(location.search);
+  if (params.has('render')) { document.documentElement.classList.add('render'); return; }
+  const stage = $('#stage');
+  const fit = () => {
+    const k = Math.min(innerWidth / stage.offsetWidth, innerHeight / stage.offsetHeight);
+    stage.style.transform = `scale(${k})`;
+  };
+  addEventListener('resize', fit); fit();
+  const frozen = params.get('t');
+  let paused = frozen !== null, t = Number(frozen) || 0, last = performance.now();
+  addEventListener('keydown', (e) => {
+    if (e.key === ' ') paused = !paused;
+    if (e.key === 'ArrowRight') t = Math.min(window.DURATION, t + 1 / 30);
+    if (e.key === 'ArrowLeft') t = Math.max(0, t - 1 / 30);
+  });
+  const loop = (now) => {
+    if (!paused) t = (t + (now - last) / 1000) % window.DURATION;
+    last = now;
+    window.seek(t);
+    $('#clock').textContent = `${t.toFixed(2)}s  space: pause  arrows: step`;
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
