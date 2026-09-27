@@ -50,7 +50,8 @@ Pages that read the clock therefore still render identically every time.
 | [`references/output.md`](references/output.md) | choosing a format and size; GIF, alpha, blur, audio, compositing |
 | [`references/product-demos.md`](references/product-demos.md) | demoing a real desktop application from its screenshots: capture, permissions, overlay alignment |
 | [`assets/template.html`](assets/template.html) | starting a composition |
-| [`scripts/render.py`](scripts/render.py) | checking and rendering |
+| [`scripts/render.py`](scripts/render.py) | checking and rendering, including overlay alignment (`window.ALIGN`) |
+| [`scripts/fit_targets.py`](scripts/fit_targets.py) | fitting recorded click targets to the pixels they cover |
 
 ## Related
 

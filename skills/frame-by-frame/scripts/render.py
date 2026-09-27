@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["playwright>=1.45"]
+# dependencies = ["playwright>=1.45", "pillow"]
 # ///
 """Render an HTML page that exposes window.seek(t) to stills, contact sheets and video.
 
     uv run render.py check  page.html [--loop]
-    uv run render.py sheet  page.html sheet.png [--at 0,1.5,3 | --n 9]
+    uv run render.py sheet  page.html sheet.png [--at 0,1.5,3 | --n 9 | --align]
     uv run render.py still  page.html out.png --at 2.5 [--scale 2]
     uv run render.py video  page.html out.mp4|.webm|.mov|.gif|frames/%05d.png
 
@@ -19,6 +19,23 @@ with ?render appended so it can skip its own preview loop.
 Before page scripts run, Date, performance.now and requestAnimationFrame are
 replaced with a clock this script sets, and Math.random is seeded from the
 frame time, so frames are repeatable even where a page reads the clock.
+
+Overlays meant to line up with something (a highlight ring, a cursor, a callout)
+can be declared in window.ALIGN; `check` then measures each at its moment and
+fails when it is off-centre, misses its target or is clipped:
+
+    window.ALIGN = [
+      {t: 10.7, overlay: '#ring', target: [985, 644, 90, 14], in: '#world'},  // surrounds
+      {t: 10.75, overlay: '#cursor', target: [985, 644, 90, 14], in: '#world',
+       hotspot: [0.09, 0.06]},                                                // points into
+    ]
+
+target is a CSS selector or a rectangle [x, y, w, h] in the local coordinates
+of the element `in` (default #stage), so it follows that element's transforms.
+A rectangle target is itself checked against the pixels under it (overlays
+hidden): its visible content must be centred in it, which catches rectangles
+taken from accessibility frames (shadows, padding) or measured by hand. Pass
+content: false on an entry whose target is not meant to hug visible content.
 """
 
 from __future__ import annotations
@@ -156,6 +173,38 @@ LAYOUT = r"""
   }
   return out;
 }
+"""
+
+# Where each declared overlay and its target are on the page at this moment, in page pixels.
+ALIGN_JS = r"""
+(entries) => entries.map((e) => {
+  const o = document.querySelector(e.overlay);
+  if (!o) return { error: `no element matches ${e.overlay}` };
+  let T;
+  if (typeof e.target === 'string') {
+    const el = document.querySelector(e.target);
+    if (!el) return { error: `no element matches ${e.target}` };
+    T = el.getBoundingClientRect();
+  } else {
+    const host = document.querySelector(e.in || '#stage') || document.body;
+    const probe = document.createElement('div');
+    const [x, y, w, h] = e.target;
+    Object.assign(probe.style, { position: 'absolute', left: x + 'px', top: y + 'px', width: w + 'px',
+      height: h + 'px', visibility: 'hidden', pointerEvents: 'none', margin: 0, border: 0, padding: 0 });
+    host.appendChild(probe);
+    T = probe.getBoundingClientRect();
+    probe.remove();
+  }
+  let clip = null;
+  for (let a = o.parentElement; a; a = a.parentElement) {
+    const cs = getComputedStyle(a);
+    if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') { clip = a.getBoundingClientRect(); break; }
+  }
+  let opacity = 1;
+  for (let a = o; a && a.nodeType === 1; a = a.parentElement) opacity *= Number(getComputedStyle(a).opacity);
+  const r = (b) => [b.left + scrollX, b.top + scrollY, b.width, b.height];
+  return { overlay: r(o.getBoundingClientRect()), target: r(T), clip: clip && r(clip), opacity };
+})
 """
 
 # Mean absolute difference, in percent of full scale, between pairs of PNGs,
@@ -298,12 +347,12 @@ def diffs(pw_page, pngs: list[bytes], pairs: list[tuple[int, int]]) -> list[floa
     )
 
 
-def sheet_png(page: Page, shots: list[tuple[float, bytes]], cols: int) -> bytes:
+def sheet_png(page: Page, shots: list[tuple[str, bytes]], cols: int) -> bytes:
     tile = 480 if len(shots) > 1 else 960
     cols = max(1, min(cols, len(shots)))
     cells = "".join(
-        f'<figure><img src="{data_url(p)}"><figcaption>t = {t:.2f}s</figcaption></figure>'
-        for t, p in shots
+        f'<figure><img src="{data_url(p)}"><figcaption>{label}</figcaption></figure>'
+        for label, p in shots
     )
     lab = page.ctx.new_page()
     lab.set_viewport_size({"width": cols * (tile + 10) + 10, "height": 200})
@@ -336,9 +385,149 @@ def cmd_still(page: Page, args) -> int:
     return report_errors(page)
 
 
+def declared_alignments(page: Page) -> list[dict]:
+    return page.page.evaluate("() => Array.isArray(window.ALIGN) ? window.ALIGN : []")
+
+
+def measure(page: Page, entry: dict) -> dict:
+    page.shot(entry["t"])  # seek and paint
+    return page.page.evaluate(ALIGN_JS, [entry])[0]
+
+
+def target_content_problem(
+    page: Page, entry: dict, m: dict, scale: float
+) -> str | None:
+    """Is the visible content under a rectangle target centred in it? Overlays are hidden while looking."""
+    import io
+
+    from PIL import Image
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from fit_targets import fit
+
+    tx, ty, tw, th = m["target"]
+    pad = 12
+    clip = {
+        "x": max(0, tx - pad),
+        "y": max(0, ty - pad),
+        "width": tw + 2 * pad,
+        "height": th + 2 * pad,
+    }
+    overlays = [e["overlay"] for e in declared_alignments(page)]
+    page.page.evaluate(
+        "(sels) => sels.forEach((s) => document.querySelectorAll(s).forEach((el) => {"
+        " el.dataset.fbfVis = el.style.visibility; el.style.visibility = 'hidden'; }))",
+        overlays,
+    )
+    try:
+        png = page.page.screenshot(type="png", clip=clip)
+    finally:
+        page.page.evaluate(
+            "(sels) => sels.forEach((s) => document.querySelectorAll(s).forEach((el) => {"
+            " el.style.visibility = el.dataset.fbfVis || ''; delete el.dataset.fbfVis; }))",
+            overlays,
+        )
+    img = Image.open(io.BytesIO(png)).convert("RGB")
+    ox, oy = (tx - clip["x"]) * scale, (ty - clip["y"]) * scale
+    raw = [round(ox), round(oy), round(tw * scale), round(th * scale)]
+    fx, fy, fw, fh = fit(img, raw)
+    dx = (fx + fw / 2 - (raw[0] + raw[2] / 2)) / scale
+    dy = (fy + fh / 2 - (raw[1] + raw[3] / 2)) / scale
+    tol = float(entry.get("tolerance", 2))
+    # Judge an axis only where the content fills most of the target: a shadow or padding error shifts a
+    # snug box, while a deliberately wide highlight (a whole menu row around a short label) is left alone.
+    if fw < 0.6 * raw[2]:
+        dx = 0.0
+    if fh < 0.6 * raw[3]:
+        dy = 0.0
+    if abs(dx) > tol or abs(dy) > tol:
+        return (
+            f"the target of {entry['overlay']} at t={entry['t']:g} is not centred on what is visible under it:"
+            f" the content sits ({dx:+.1f}, {dy:+.1f}) px from its centre. Fit the rectangle to the pixels"
+            " (scripts/fit_targets.py); accessibility frames include shadows and padding"
+        )
+    return None
+
+
+def alignment_problems(entry: dict, m: dict) -> list[str]:
+    """What is wrong with one declared overlay at its moment; empty when it lines up."""
+    if "error" in m:
+        return [m["error"]]
+    name = f"{entry['overlay']} at t={entry['t']:g}"
+    tol = float(entry.get("tolerance", 2))
+    ox, oy, ow, oh = m["overlay"]
+    tx, ty, tw, th = m["target"]
+    out = []
+    if m["opacity"] < 0.05:
+        out.append(f"{name} is not visible (opacity {m['opacity']:.2f})")
+    if "hotspot" in entry:
+        fx, fy = entry["hotspot"]
+        px, py = ox + fx * ow, oy + fy * oh
+        if not (tx - tol <= px <= tx + tw + tol and ty - tol <= py <= ty + th + tol):
+            out.append(
+                f"{name} points at ({px:.0f}, {py:.0f}), outside its target {[round(v) for v in m['target']]}"
+            )
+    else:
+        dx, dy = (ox + ow / 2) - (tx + tw / 2), (oy + oh / 2) - (ty + th / 2)
+        if abs(dx) > tol or abs(dy) > tol:
+            out.append(
+                f"{name} is off-centre from its target by ({dx:+.1f}, {dy:+.1f}) px"
+            )
+        if (
+            ox > tx + tol
+            or oy > ty + tol
+            or ox + ow < tx + tw - tol
+            or oy + oh < ty + th - tol
+        ):
+            out.append(
+                f"{name} does not enclose its target: it cuts across the thing it highlights"
+            )
+    if m.get("clip"):
+        cx, cy, cw, ch = m["clip"]
+        if (
+            ox < cx - 0.5
+            or oy < cy - 0.5
+            or ox + ow > cx + cw + 0.5
+            or oy + oh > cy + ch + 0.5
+        ):
+            out.append(f"{name} is clipped by an ancestor with overflow hidden")
+    return out
+
+
 def cmd_sheet(page: Page, args) -> int:
+    if args.align:
+        # One 2x-worthy crop per declared overlay, at the moment it should line up.
+        entries = declared_alignments(page)
+        if not entries:
+            sys.exit("--align needs window.ALIGN on the page")
+        shots = []
+        for e in entries:
+            m = measure(page, e)
+            if "error" in m:
+                sys.exit(m["error"])
+            ox, oy, ow, oh = m["overlay"]
+            tx, ty, tw, th = m["target"]
+            x0, y0 = max(0, min(ox, tx) - 40), max(0, min(oy, ty) - 40)
+            x1, y1 = max(ox + ow, tx + tw) + 40, max(oy + oh, ty + th) + 40
+            png = page.page.screenshot(
+                type="png", clip={"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0}
+            )
+            bad = alignment_problems(e, m)
+            if (
+                not bad
+                and not isinstance(e.get("target"), str)
+                and e.get("content", True)
+                and "hotspot" not in e
+            ):
+                bad = [p for p in [target_content_problem(page, e, m, args.scale)] if p]
+            shots.append(
+                (f"{e['overlay']} t={e['t']:g}" + (" — OFF" if bad else ""), png)
+            )
+        write_atomic(args.out, sheet_png(page, shots, args.cols))
+        print(f"wrote {args.out}: {len(shots)} overlay crops")
+        return report_errors(page)
     ts = times(args.at, args.n, page.duration, args.fps)
-    shots = [(t, page.shot(t, alpha=args.alpha)) for t in ts]
+    shots = [(f"t = {t:.2f}s", page.shot(t, alpha=args.alpha)) for t in ts]
     write_atomic(args.out, sheet_png(page, shots, args.cols))
     print(f"wrote {args.out}: {len(ts)} frames at " + ", ".join(f"{t:g}s" for t in ts))
     return report_errors(page)
@@ -417,6 +606,22 @@ def cmd_check(page: Page, args) -> int:
                     f"the loop jumps: seek({info['duration']:g}) differs from seek(0) by {seam:.2f}%"
                     f" (a typical frame step is {typical:.2f}%)"
                 )
+
+    entries = declared_alignments(page)
+    for e in entries:
+        m = measure(page, e)
+        errors += alignment_problems(e, m)
+        if (
+            "error" not in m
+            and not isinstance(e.get("target"), str)
+            and e.get("content", True)
+            and "hotspot" not in e
+        ):
+            problem = target_content_problem(page, e, m, args.scale)
+            if problem:
+                errors.append(problem)
+    if entries:
+        notes.append(f"{len(entries)} declared overlays measured against their targets")
 
     if page.remote:
         warnings.append(
@@ -694,6 +899,11 @@ def main() -> int:
     p.add_argument("--at", help="comma-separated times, e.g. the brief's beats")
     p.add_argument("--n", type=int, default=9)
     p.add_argument("--cols", type=int, default=3)
+    p.add_argument(
+        "--align",
+        action="store_true",
+        help="crop each overlay declared in window.ALIGN instead",
+    )
 
     p = sub.add_parser("still", parents=[common], help="write one frame as PNG")
     p.add_argument("out")

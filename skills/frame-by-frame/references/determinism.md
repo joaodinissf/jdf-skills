@@ -11,6 +11,7 @@ motion blur. It calls in order for a video and in any order for `check` and
 | `#stage` | The frame. Its box sets the output size; give it an explicit width and height. Without it the viewport is the frame (`--size WxH`, default 1920×1080). |
 | `window.DURATION` | Length in seconds. Absent or 0 means a still. |
 | `window.seek(t)` | Draw the moment `t` seconds in. It may be `async`; the renderer waits for it. |
+| `window.ALIGN` | Optional list of overlays that must line up with something, each `{t, overlay, target, in?, hotspot?, tolerance?, content?}`. `check` measures them; see [`product-demos.md`](product-demos.md). |
 | `window.READY` | Optional promise the renderer awaits before the first frame: set it when setup loads or decodes anything asynchronously. |
 | `?render` | Present in the URL while rendering. The page must not start its own playback loop. |
 

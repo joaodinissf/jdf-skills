@@ -148,10 +148,10 @@ look right. Go through this list, most frequent first:
   one step apart around the moment in question;
 - an overlay off its target: a highlight, cursor, callout or label a few
   pixels from the thing it points at, or clipped at the frame edge. A sheet
-  is too small to show it. Render each such moment at `--scale 2`, crop
-  around the target and compare centres. Rectangles taken from accessibility
-  frames or measured by hand are rarely the visible edges; fit them to the
-  pixels first.
+  is too small to show it. Declare such overlays in `window.ALIGN` so that
+  `check` measures them, and look at `sheet --align --scale 2`. Rectangles
+  from accessibility frames or hand measurement are rarely the visible
+  edges; fit them first ([`references/product-demos.md`](references/product-demos.md)).
 
 Fix, then run `check` and `sheet` again. Two or three rounds usually settle
 it. If defects remain after that, report them rather than circling.
@@ -180,7 +180,8 @@ support:
 - **Outputs:** each file's path, size, duration and format.
 - **Checks:** which ones ran, what they found, and what was fixed.
 - **Frames looked at:** which times, and anything judged but left as it is,
-  with the reason.
+  with the reason. Say which overlays were verified against their targets
+  and which were not.
 - **Assumptions:** those the user has not confirmed, such as copy,
   illustrative data, a stand-in for a logo, or a font substitution.
 - **Rerun:** the commands to render again.
