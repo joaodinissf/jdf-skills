@@ -23,8 +23,10 @@ the same on every run.
 In scope: anything a browser can draw. That includes typography, shapes,
 charts, diagrams, SVG illustration, canvas and WebGL scenes, and interface
 mock-ups for product demos. Screenshots, footage and images can be
-composited in as assets. Still images are the degenerate case: one frame
-at one `t`.
+composited in as assets. That includes a demo of a real desktop application
+composed from its screenshots, as described in
+[`references/product-demos.md`](references/product-demos.md). Still images
+are the degenerate case: one frame at one `t`.
 
 Say so plainly, and do not force the method, when:
 
@@ -143,7 +145,13 @@ look right. Go through this list, most frequent first:
 - dead air, meaning a stretch where nothing new happens, or everything
   moving at once;
 - motion that snaps: a jump between two adjacent frames. Sample two frames
-  one step apart around the moment in question.
+  one step apart around the moment in question;
+- an overlay off its target: a highlight, cursor, callout or label a few
+  pixels from the thing it points at, or clipped at the frame edge. A sheet
+  is too small to show it. Render each such moment at `--scale 2`, crop
+  around the target and compare centres. Rectangles taken from accessibility
+  frames or measured by hand are rarely the visible edges; fit them to the
+  pixels first.
 
 Fix, then run `check` and `sheet` again. Two or three rounds usually settle
 it. If defects remain after that, report them rather than circling.

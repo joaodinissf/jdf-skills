@@ -27,6 +27,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -204,8 +205,14 @@ class Page:
                 ],
             )
         except Exception as e:  # noqa: BLE001 - Playwright raises its own Error types
+            first = str(e).splitlines()[0]
+            if "Timeout" in first:
+                sys.exit(
+                    f"Chromium did not start in time: {first}\n"
+                    "the browser is installed but the machine is too busy; retry when it is quieter"
+                )
             sys.exit(
-                f"cannot start Chromium: {str(e).splitlines()[0]}\n"
+                f"cannot start Chromium: {first}\n"
                 "install it with `uv run --with playwright playwright install chromium`, "
                 "or pass --channel chrome to use an installed Google Chrome"
             )
@@ -307,9 +314,22 @@ def sheet_png(page: Page, shots: list[tuple[float, bytes]], cols: int) -> bytes:
     return png
 
 
+def partial(out) -> Path:
+    """Where an output is written until it is complete: a failed or concurrent render never leaves a
+    truncated file under the real name. The extension is kept so that ffmpeg picks the right muxer."""
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    return out.with_name(f".{out.stem}.partial{out.suffix}")
+
+
+def write_atomic(out, data: bytes):
+    tmp = partial(out)
+    tmp.write_bytes(data)
+    os.replace(tmp, out)
+
+
 def cmd_still(page: Page, args) -> int:
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_bytes(page.shot(args.at, alpha=args.alpha))
+    write_atomic(args.out, page.shot(args.at, alpha=args.alpha))
     print(
         f"wrote {args.out} at t={args.at}s ({page.clip['width']}x{page.clip['height']} @{args.scale}x)"
     )
@@ -319,8 +339,7 @@ def cmd_still(page: Page, args) -> int:
 def cmd_sheet(page: Page, args) -> int:
     ts = times(args.at, args.n, page.duration, args.fps)
     shots = [(t, page.shot(t, alpha=args.alpha)) for t in ts]
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_bytes(sheet_png(page, shots, args.cols))
+    write_atomic(args.out, sheet_png(page, shots, args.cols))
     print(f"wrote {args.out}: {len(ts)} frames at " + ", ".join(f"{t:g}s" for t in ts))
     return report_errors(page)
 
@@ -545,8 +564,10 @@ def cmd_video(page: Page, args) -> int:
         ]
     filters, opts = encoder(args.out, args.alpha, args.crf, args.dither)
     vf = ",".join(chain + filters)
-    if Path(args.out).parent:
+    sequence = "%" in args.out
+    if sequence:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    target = args.out if sequence else str(partial(args.out))
     cmd = [
         "ffmpeg",
         "-loglevel",
@@ -569,7 +590,7 @@ def cmd_video(page: Page, args) -> int:
     )
     if args.audio:
         cmd += ["-c:a", "libopus" if ext == ".webm" else "aac", "-shortest"]
-    cmd.append(args.out)
+    cmd.append(target)
 
     ff = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     shutter = 0.5 / fps
@@ -584,15 +605,23 @@ def cmd_video(page: Page, args) -> int:
                 print(f"\rframe {f + 1}/{frames}", end="", file=sys.stderr, flush=True)
     except BrokenPipeError:
         pass
+    except Exception:
+        ff.kill()
+        ff.wait()
+        if not sequence:
+            Path(target).unlink(missing_ok=True)
+        raise
     ff.stdin.close()
     if ff.wait():
+        if not sequence:
+            Path(target).unlink(missing_ok=True)
         return ff.returncode
     print(f"\rframe {frames}/{frames}", file=sys.stderr)
 
-    if "%" in args.out:
+    if sequence:
         print(f"wrote {frames} frames to {args.out}")
         return report_errors(page)
-    got = probe(args.out)
+    got = probe(target)
     problems = []
     if (int(got["width"]), int(got["height"])) != (w, h):
         problems.append(f"size {got['width']}x{got['height']}, expected {w}x{h}")
@@ -600,8 +629,11 @@ def cmd_video(page: Page, args) -> int:
         problems.append(f"duration {got.get('duration')}s, expected {page.duration}s")
     if int(got.get("nb_read_packets", frames)) != frames:
         problems.append(f"{got.get('nb_read_packets')} frames, expected {frames}")
+    if not problems:
+        os.replace(target, args.out)
     print(
-        f"wrote {args.out}: {got['codec_name']} {got['width']}x{got['height']} {got.get('pix_fmt')} "
+        f"{'wrote' if not problems else 'left for inspection'} {args.out if not problems else target}: "
+        f"{got['codec_name']} {got['width']}x{got['height']} {got.get('pix_fmt')} "
         f"{float(got.get('duration', 0)):.3f}s {got.get('nb_read_packets')} frames"
     )
     for p in problems:

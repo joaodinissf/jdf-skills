@@ -48,6 +48,7 @@ Pages that read the clock therefore still render identically every time.
 | [`references/craft.md`](references/craft.md) | choreographing: easing, springs, durations, layout, type, colour, what looks generated, product demos |
 | [`references/determinism.md`](references/determinism.md) | using a library, canvas, WebGL, footage, fonts or randomness |
 | [`references/output.md`](references/output.md) | choosing a format and size; GIF, alpha, blur, audio, compositing |
+| [`references/product-demos.md`](references/product-demos.md) | demoing a real desktop application from its screenshots: capture, permissions, overlay alignment |
 | [`assets/template.html`](assets/template.html) | starting a composition |
 | [`scripts/render.py`](scripts/render.py) | checking and rendering |
 
@@ -96,8 +97,10 @@ Ideas were adapted in new words and code. No text or code was copied.
   - rhythm of holds;
   - a render, inspect and fix loop with a named defect list;
   - the optional grade, grain and vignette finish.
-- [remotion-dev/skills](https://github.com/remotion-dev/skills) and
-  [delphi-ai/animate-skill](https://github.com/delphi-ai/animate-skill)
+- [remotion-dev/skills](https://github.com/remotion-dev/skills),
+  [delphi-ai/animate-skill](https://github.com/delphi-ai/animate-skill) and
+  [supermemoryai/skills `svg-animations`](https://github.com/supermemoryai/skills/tree/main/svg-animations)
   (no licence stated) informed a few general principles. Those principles
   are restated here, not reproduced: layout for a frame rather than a page,
-  minimum type sizes, perceptual scale, and easing by direction of travel.
+  minimum type sizes, perceptual scale, easing by direction of travel, and
+  seeking SMIL and CSS animation in SVG.
