@@ -49,6 +49,7 @@ CLOCK = r"""
   VDate.UTC = RealDate.UTC;
   window.Date = VDate;
   performance.now = () => now;
+  const realFrame = window.requestAnimationFrame.bind(window);
   const queue = new Map();
   let next = 1;
   window.requestAnimationFrame = (cb) => { queue.set(next, cb); return next++; };
@@ -60,6 +61,8 @@ CLOCK = r"""
     return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
   };
   window.__fbf = {
+    // Two real frames: the compositor has drawn everything set before the call.
+    painted: () => new Promise((done) => realFrame(() => realFrame(done))),
     async go(t) {
       now = t * 1000;
       seed = (Math.round(t * 1e6) ^ 0x6d2b79f5) | 0;
@@ -75,6 +78,7 @@ CLOCK = r"""
         queue.clear();
         for (const cb of due) cb(now);
       }
+      await this.painted();
     },
   };
 })();
@@ -240,6 +244,8 @@ class Page:
                 }
             )
             self.info = self.page.evaluate(INFO)
+        # A screenshot straight after a resize can show tiles from before it.
+        self.page.evaluate("window.__fbf.painted()")
         self.clip = {k: self.info[k] for k in ("x", "y", "width", "height")}
 
     def error(self, message: str):
@@ -302,6 +308,7 @@ def sheet_png(page: Page, shots: list[tuple[float, bytes]], cols: int) -> bytes:
 
 
 def cmd_still(page: Page, args) -> int:
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_bytes(page.shot(args.at, alpha=args.alpha))
     print(
         f"wrote {args.out} at t={args.at}s ({page.clip['width']}x{page.clip['height']} @{args.scale}x)"
@@ -312,6 +319,7 @@ def cmd_still(page: Page, args) -> int:
 def cmd_sheet(page: Page, args) -> int:
     ts = times(args.at, args.n, page.duration, args.fps)
     shots = [(t, page.shot(t, alpha=args.alpha)) for t in ts]
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_bytes(sheet_png(page, shots, args.cols))
     print(f"wrote {args.out}: {len(ts)} frames at " + ", ".join(f"{t:g}s" for t in ts))
     return report_errors(page)
