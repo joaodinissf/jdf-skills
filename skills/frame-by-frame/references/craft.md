@@ -132,6 +132,9 @@ same moment reads as a template.
 
 ## Product and interface demos
 
+For a real desktop application, composed from its screenshots, see
+[`product-demos.md`](product-demos.md).
+
 - **Recreate the interface in HTML** when the demo needs to be crisp, to
   change easily, or to show states that are hard to reach. Match the real
   layout, type and colours from screenshots. Simplify whatever is not the
