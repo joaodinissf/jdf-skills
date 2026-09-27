@@ -191,6 +191,41 @@ agent chat to capture project context. Then name the page or component:
 Use `audit` or `critique` to review, then `polish` to make refinements. In Codex,
 use `$impeccable` in place of `/impeccable`.
 
+### [`code-simplification`](https://github.com/addyosmani/agent-skills/tree/main/skills/code-simplification) — addyosmani
+
+Simplifies working code without changing what it does. Before anything is removed,
+it asks why that thing exists (Chesterton's Fence). It then looks for concrete
+patterns: a wrapper that adds nothing, a strategy pattern with one strategy, dead
+code.
+
+Here because it names the opposite failure too. Inlining a helper that gave a
+concept its name, or merging two simple functions into one complex one, is not
+simpler. It also keeps refactoring out of feature changes: one of each is two
+changes.
+
+### [`code-review-and-quality`](https://github.com/addyosmani/agent-skills/tree/main/skills/code-review-and-quality) — addyosmani
+
+Reviews a change on five axes: correctness, readability, architecture, security
+and performance. Proposes a named restructuring for each structural problem it
+finds, not only the problem.
+
+Here for one question: does this refactor reduce complexity, or only move it?
+Count the concepts a reader must hold; if the "cleaner" version leaves that number
+the same, it is not cleaner. It prefers deleting an abstraction to polishing one,
+and gives four ways to split a change that is too large: stacked, by file group,
+horizontal and vertical.
+
+### [`yagni-principle`](https://github.com/kayaman/skills/tree/main/yagni-principle) — kayaman
+
+Asks of each piece whether it answers a need that exists now or one that someone
+foresees. A configuration option nobody sets, an interface with one
+implementation, a marker no caller reads.
+
+Here for cut-or-defer decisions. It separates code that is easy to extend, which
+is good structure, from code that is already extended, which is speculation. Its
+test is simple: if adding the piece later costs little more than adding it now,
+wait.
+
 ## Design notes
 
 The first three are language- and framework-agnostic on purpose. Nothing in
