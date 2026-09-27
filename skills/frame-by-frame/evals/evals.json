@@ -1,0 +1,46 @@
+{
+  "skill_name": "frame-by-frame",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Make a 6-second 1920x1080 MP4 title card announcing 'Ledger 2.0 — reconciliation in seconds, not hours'. Dark, restrained, no stock-looking effects. Put the output in ./out.",
+      "expected_output": "A brief with a beat table, a seek(t) page, a check that passes, a contact sheet the agent looked at, and out/*.mp4 of 180 frames at 1920x1080.",
+      "files": [],
+      "expectations": [
+        "A brief or beat table with times is written before or alongside the page",
+        "The page exposes window.seek(t) and window.DURATION = 6, and seek keeps no state between calls",
+        "render.py check was run and its final run passes",
+        "A contact sheet or stills were rendered and the agent reports looking at specific times",
+        "The MP4 is H.264, 1920x1080, 6 s, 180 frames, as confirmed by the video gate or ffprobe",
+        "The copy appears exactly as given, with no invented claims or numbers",
+        "The report states assumptions (font, palette) and the rerun commands"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our README needs a looping GIF, 960x540, showing monthly active users for Jan-Jun as bars that grow in and then morph into a line chart through the same values. Numbers: 1200, 1450, 1390, 1810, 2240, 2600. Keep the file small.",
+      "expected_output": "A seamless GIF loop in which bars morph into a line through the given values, with check --loop passing and the file size reported.",
+      "files": [],
+      "expectations": [
+        "All six values are plotted exactly as given, with labels and axes that stay fixed while the marks move",
+        "The bars transform into the line (the same points), rather than crossfading between two pictures",
+        "check --loop passes: seek(DURATION) matches seek(0)",
+        "The GIF uses a reduced frame rate (12-20 fps) and a flat palette or --dither none, and its size is reported",
+        "The first frame of the GIF is a readable picture, not an empty frame"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a 1200x630 PNG social preview image for a blog post titled 'Why our queue lost messages (and the one-line fix)'. Use our colours: ink #0B1F33, accent #F2A541, paper #FAF7F2.",
+      "expected_output": "A still composition at 1200x630 using the given palette, rendered at 2x scale, and inspected.",
+      "files": [],
+      "expectations": [
+        "The page is a still (DURATION absent or 0), and the output is rendered at 2400x1260 (scale 2) or at 1200x630, as stated in the report",
+        "Only the three given colours are used, plus tints of them",
+        "The full title is legible, with no clipping, and sits inside the safe area",
+        "The agent looked at the rendered PNG before reporting",
+        "No invented logo or brand mark is drawn"
+      ]
+    }
+  ]
+}

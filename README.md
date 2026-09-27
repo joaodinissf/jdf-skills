@@ -96,6 +96,20 @@ assumptions and limits.
 Leaves a `specs/` directory with the model, its explanation and rerunnable
 checks, so the understanding survives the session.
 
+### [`frame-by-frame`](skills/frame-by-frame) — decide every frame, then look at them
+
+Makes motion graphics and still images as code: a page whose every frame is a
+pure function of time, rendered deterministically to MP4, WebM, ProRes with
+alpha, GIF or PNG. A brief with a beat table comes before any code. Before
+anything is delivered, the frames are checked and looked at: a fallback font,
+clipped text, a timeline where nothing moves, a loop that jumps.
+
+One Python script renders, run with `uv run`; it replaces the page's clock and
+random numbers, so the same page gives the same frames on every run. No
+framework to adopt, no licence to buy.
+
+Code that runs says nothing about what a viewer sees.
+
 ## Favourite skills
 
 Other people's skills that earned a place in my setup. Nothing here is mine.
@@ -240,7 +254,10 @@ failure rather than the packages that exhibited them, so it stays true on a
 machine sharing none of the tools that taught it. `system-model` names its two
 formalisms because they are its method, not its subject; everything it says
 about the system under study is phrased as behaviour — a state transition,
-a lock, a transaction — rather than as any one framework.
+a lock, a transaction — rather than as any one framework. `frame-by-frame`
+names a browser and ffmpeg because rendering is its method; it asks for no
+animation library, and every duration it recommends is in seconds, so it
+survives a change of frame rate as well as of tools.
 
 They are also written to fail quietly rather than loudly: an empty result is a
 valid answer, and each says so explicitly. A skill that must find something will
