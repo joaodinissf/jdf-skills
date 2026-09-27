@@ -67,23 +67,39 @@ a script records is often not that:
   menu-bar item's frame is taller than the visible bar.
 - **Hand-measured rectangles drift** by several pixels.
 
-**Fit each target to its visible content before composing:**
-1. Estimate the background from a thin ring of pixels just outside the rectangle.
-2. Keep the pixels inside that differ clearly from it, for example by more than 48 in any channel.
-3. Strip full-width or full-height lines at the rectangle's edges, which are borders and separators. Do not
-   strip lines in the middle: a solid button is full-width on every row.
-4. Take the bounding box of what remains.
+**Fit each target to its visible content before composing**, with
+[`scripts/fit_targets.py`](../scripts/fit_targets.py):
 
-Then pad highlights evenly around that box, and keep them inside the frame.
+```sh
+uv run scripts/fit_targets.py --steps shots.json     # rewrites each step's target, keeps target_raw
+```
 
-**Check alignment explicitly, because a contact sheet is too small to show a 3–5 px offset.** For each
-overlay:
-- render the frame at the moment it should line up, at `--scale 2`;
-- crop around the target;
-- look at the crops together.
+It estimates the background just outside each rectangle, keeps what differs from it, strips border lines
+at the edges, and takes the bounding box. Pad highlights evenly around the fitted box, and keep them
+inside the frame.
 
-Compare the overlay's centre with the element's centre, and make sure its edges are neither clipped nor
-crossing a neighbouring element.
+**Declare every overlay in `window.ALIGN`, so that `check` measures it.** A contact sheet is too small to
+show a 3–5 px offset, and looking is the step that gets skipped:
+
+```js
+window.ALIGN = [
+  { t: 10.45, overlay: '#ring', target: finishRect, in: '#world' },           // surrounds the button
+  { t: 10.7, overlay: '#cursor', target: finishRect, in: '#world',
+    hotspot: [2 / 22, 2 / 32] },                                             // tip lands on it
+];
+```
+
+`check` fails when an overlay:
+- is off-centre from its target, or cuts across it;
+- is clipped by an ancestor;
+- is invisible at its moment;
+- has a target whose own visible content is off-centre, meaning the rectangle came from an accessibility
+  frame or a hand measurement.
+
+`sheet --align --scale 2` writes one crop per entry, marked OFF where it fails, to look at.
+
+Declare each moment while the state it points at is still on screen. A ring that lingers past the click
+frame outlines empty space on the next screen.
 
 ## Composing
 

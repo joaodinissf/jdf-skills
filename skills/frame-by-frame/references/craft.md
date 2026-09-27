@@ -73,6 +73,11 @@ pause, scroll back or hover. They have to read it at the speed it plays.
   that the first frame is a composed still and not a half-drawn state.
   Where the first frame becomes the thumbnail or preview, make it the
   finished picture instead.
+- **Place annotations by measuring what they annotate.** A callout, label,
+  ring or arrow placed at hard-coded coordinates drifts as soon as the copy,
+  font or layout changes. Inside the page, take positions from
+  `getBoundingClientRect()`. Over an image, use rectangles fitted to its
+  pixels, and declare them in `window.ALIGN`.
 - **Transform the object, do not swap it.** A bar chart that becomes a
   line through the same values, or a button that grows into the panel it
   opens, explains the relationship between them. A crossfade between two

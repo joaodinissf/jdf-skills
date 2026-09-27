@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Make a 6-second 1920x1080 MP4 title card announcing 'Ledger 2.0 — reconciliation in seconds, not hours'. Dark, restrained, no stock-looking effects. Put the output in ./out.",
+      "prompt": "Make a 6-second 1920x1080 MP4 title card announcing 'Ledger 2.0 \u2014 reconciliation in seconds, not hours'. Dark, restrained, no stock-looking effects. Put the output in ./out.",
       "expected_output": "A brief with a beat table, a seek(t) page, a check that passes, a contact sheet the agent looked at, and out/*.mp4 of 180 frames at 1920x1080.",
       "files": [],
       "expectations": [
@@ -40,6 +40,22 @@
         "The full title is legible, with no clipping, and sits inside the safe area",
         "The agent looked at the rendered PNG before reporting",
         "No invented logo or brand mark is drawn"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Here is a screenshot of our Export dialog (files/export-dialog.png) and the accessibility frame of its Export button (files/export-dialog.targets.json). Make a 5-second 1280x720 MP4 that shows the dialog, moves a cursor to the Export button, highlights it with a ring and clicks it. It will go in release notes, so it needs to look precise.",
+      "expected_output": "A composition over the screenshot whose ring and cursor land on the visible button, not on its shadow-inclusive frame, with the alignment checked mechanically.",
+      "files": [
+        "files/export-dialog.png",
+        "files/export-dialog.targets.json"
+      ],
+      "expectations": [
+        "The button rectangle is fitted to the visible pixels (about [516, 318, 96, 28]) rather than used raw ([516, 318, 96, 36]), e.g. with scripts/fit_targets.py",
+        "The page declares the ring (and ideally the cursor) in window.ALIGN, and the final render.py check passes",
+        "The ring's centre is within 2 px of the visible button's centre, and the ring is not clipped",
+        "The ring is not visible after the click once the screen would change (there is no next screen here, so it may fade after the press)",
+        "The report says which overlays were verified against their targets"
       ]
     }
   ]
