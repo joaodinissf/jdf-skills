@@ -25,21 +25,8 @@ npx skills add joaodinissf/jdf-skills -s <name>  # just one
 | [`branch-pruner`](skills/branch-pruner) | Brings a repository back to one checkout without losing any work. |
 | [`uber-updater`](skills/uber-updater) | Finds every package manager on a machine and updates only what you approve. |
 | [`system-model`](skills/system-model) | Models a system in TLA+ or Lean 4 so its assumptions can be checked. |
+| [`frame-by-frame`](skills/frame-by-frame) | Makes motion graphics and images as code, then renders and looks at every frame. |
 | [`paper-figures`](skills/paper-figures) | Makes paper figures as editable sources (matplotlib, draw.io, TikZ) at column width, then checks and looks at them. |
-
-### [`frame-by-frame`](skills/frame-by-frame) — decide every frame, then look at them
-
-Makes motion graphics and still images as code: a page whose every frame is a
-pure function of time, rendered deterministically to MP4, WebM, ProRes with
-alpha, GIF or PNG. A brief with a beat table comes before any code. Before
-anything is delivered, the frames are checked and looked at: a fallback font,
-clipped text, a timeline where nothing moves, a loop that jumps.
-
-One Python script renders, run with `uv run`; it replaces the page's clock and
-random numbers, so the same page gives the same frames on every run. No
-framework to adopt, no licence to buy.
-
-Code that runs says nothing about what a viewer sees.
 
 ## Favourite skills
 
