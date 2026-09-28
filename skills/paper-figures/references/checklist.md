@@ -20,8 +20,11 @@ correctness defect makes legibility irrelevant.
 - No label overlaps another label, a line or a node. No text is clipped at the
   figure edge.
 - The smallest text is readable at print size. `check_figure.py` reports the
-  smallest size.
-- The figure is exactly the column width. `check_figure.py` reports it.
+  smallest size. Subscripts and superscripts print at about 70 % of their base
+  size. Set mathematical labels at 8 pt or more, so the scripts stay at about
+  5.5 pt or more. A warning that only concerns those scripts is acceptable.
+- The figure is exactly the width it was drawn for (one column or the full
+  text width). `check_figure.py` reports it.
 - In greyscale, every distinction survives. Render with `--grey` and look:
   fills with near-equal lightness need a hatch or a different lightness.
 - Alignment: siblings share edges or centres and have equal gaps. Arrows run

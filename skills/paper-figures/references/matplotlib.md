@@ -89,6 +89,10 @@ them, not by guessing offsets:
 - **Summaries.** Say how means are taken (geometric mean for ratios such as
   speedup). Put a mean bar or line in the same style as the data, and
   labelled.
+- **Bars and log scales.** A bar shows its value by its length from zero,
+  so do not draw bars on a log axis. When values span orders of magnitude,
+  keep the linear axis and print the values on the bars, or use points or
+  lines on a log axis.
 - **Honesty.** Start bar axes at zero. Plot only configurations measured
   under comparable conditions. Never invent a value; label placeholders as
   placeholders.
