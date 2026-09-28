@@ -1,0 +1,47 @@
+{
+  "skill_name": "paper-figures",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "For our IEEE journal paper (two columns) I need Fig. 1, the system overview. Two sides: the Base Station, which cycles through a codebook of B beamforming patterns (BF Pattern 1 … BF Pattern B, one at a time, via a switch) and runs the DL inference, and the Mobile Device, where the received PDP is sampled and the position fix arrives. Mark the phases A (broadcast), B (PDP sampled), C (DL inference) and D (position fix), since the text refers to them. Arrows: Broadcast Radiation (dashed, BS to device), Sampled Data (device back to BS), Result (BS to device). My students will want to tweak the layout by hand afterwards. Put it in figures/.",
+      "expected_output": "An editable source for a block diagram (a draw.io file preferred, or TikZ or a script) with the two sides as groups, phases A–D, three labelled arrows, a PDF export at 3.5 in wide when the tools allow it, and a report.",
+      "files": [],
+      "expectations": [
+        "The source is a format a person can edit by hand (a .drawio file, a TikZ .tex or a script with named constants), not only an image",
+        "The Base Station and the Mobile Device appear as two visually separate groups",
+        "Phases A, B, C and D and the three arrow labels appear as the prompt names them",
+        "The Broadcast Radiation arrow is dashed and the other two are solid",
+        "If a PDF was exported, it is 3.5 in wide (within 2 %) and its fonts are embedded",
+        "The report states which checks ran and names any tool that was missing, instead of claiming a render it did not make"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Draw a figure for our ACM PPoPP paper (one column) explaining horizontal processing in the Sum-Product Algorithm for LDPC decoding. Parity-check matrix H (rows = check nodes CN0..CN3, columns = bit nodes BN0..BN7):\n1 1 1 0 0 0 0 0\n0 0 0 1 1 1 0 0\n1 0 0 1 0 0 1 0\n0 1 0 0 1 0 0 1\nShow H and the Tanner graph, then four examples where a check node updates a bit node: CN0->BN0, CN1->BN4, CN2->BN6, CN3->BN7. Each update uses the incoming messages q_nm^(i-1) from the other bit nodes on that row and produces r_mn^(i). Black and white print. Put it in figures/.",
+      "expected_output": "A re-runnable script that computes the Tanner graph edges from H, draws H and the four updates with the correct q/r labels, exports a PDF at the ACM column width with embedded fonts, and a PNG preview that was looked at.",
+      "files": [],
+      "expectations": [
+        "The figure is produced by a script that holds H as data and computes the edges from it",
+        "The rendered figure shows H and all four updates with the correct source bit nodes (q10,q20; q31,q51; q02,q32; q13,q43) and outputs (r00, r14, r26, r37)",
+        "Check-node labels are consistent across panels (no repeated or missing CN label)",
+        "The PDF is 3.33 in wide (within 2 %) with all fonts embedded",
+        "Active, source and inactive nodes are distinguishable in greyscale",
+        "The agent looked at the rendered PNG before reporting"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Plot our GPU-vs-CPU speedups for the IEEE paper (single column). Data, speedup of the GPU decoder over the CPU baseline:\nmatrix edges | 10 iter | 25 iter | 50 iter | 100 iter\n3072  | 19 | 60 | 140 | 250\n14688 | 45 | 140 | 300 | 625\n16000 | 48 | 145 | 305 | 635\nGrouped bars, one group per matrix. Reviewers print in black and white. Put it in figures/.",
+      "expected_output": "A plot script with the data at the top, grouped bars with a second channel (hatches) for the iteration counts, labelled axes with units, a legend that does not cover data, a PDF at 3.5 in with embedded fonts, and a PNG that was looked at.",
+      "files": [],
+      "expectations": [
+        "The plot is produced by a script with the data table at the top, and the plotted values match the table exactly",
+        "The four iteration counts are distinguishable in greyscale (hatches, lightness steps or markers, not colour alone)",
+        "The y axis label names the quantity and unit (speedup, ×), and the x axis names the matrices",
+        "The legend or direct labels do not cover any bar",
+        "The PDF is 3.5 in wide (within 2 %) with all fonts embedded",
+        "No values were invented or altered"
+      ]
+    }
+  ]
+}
