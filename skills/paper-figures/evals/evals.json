@@ -11,7 +11,7 @@
         "The Base Station and the Mobile Device appear as two visually separate groups",
         "Phases A, B, C and D and the three arrow labels appear as the prompt names them",
         "The Broadcast Radiation arrow is dashed and the other two are solid",
-        "If a PDF was exported, it is 3.5 in wide (within 2 %) and its fonts are embedded",
+        "If a PDF was exported, it is one column (3.5 in) or the full text width (7.16 in) within 2 %, the choice is stated, and its fonts are embedded",
         "The report states which checks ran and names any tool that was missing, instead of claiming a render it did not make"
       ]
     },
@@ -40,7 +40,8 @@
         "The y axis label names the quantity and unit (speedup, ×), and the x axis names the matrices",
         "The legend or direct labels do not cover any bar",
         "The PDF is 3.5 in wide (within 2 %) with all fonts embedded",
-        "No values were invented or altered"
+        "No values were invented or altered",
+        "Bars are not drawn on a logarithmic axis"
       ]
     }
   ]

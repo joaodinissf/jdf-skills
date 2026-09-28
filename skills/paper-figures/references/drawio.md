@@ -47,6 +47,10 @@ can read the changes in a diff:
 - **Put cells on the grid** (`gridSize` 5), with equal gaps between siblings.
   Use `edgeStyle=orthogonalEdgeStyle`, and set `exitX/exitY/entryX/entryY`
   when an edge must leave or enter at a given side.
+- **Flipped shapes** (`flipH=1`, `flipV=1`) mirror their connection points, so
+  an edge attached to "the right side" lands on the left. Prefer a rotation
+  or a separate shape, or set `exitX/exitY` explicitly. Check the wiring in
+  the render.
 - **Dashed and emphasised lines**: `dashed=1`, `strokeWidth=1.5`.
 - **Notation**: set `math="1"` on `mxGraphModel`, and write `\(q_{10}^{(i-1)}\)`
   in labels. The editor typesets them with MathJax. Look at the export,

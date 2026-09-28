@@ -46,6 +46,9 @@ for what would change the result, in one batch.
   disagree with the data.
 - **Width:** single or double column, and the venue. Measure it from the
   paper's template when there is one. See [`references/venues.md`](references/venues.md).
+  When the user does not say, start with one column. Use the full width
+  (`figure*`) when one column would push text below about 6 pt, or when the
+  layout needs the width. Report which you chose.
 - **References from the text:** labels, phases, panel letters or examples
   that the prose mentions. They must appear, spelled the same way.
 
