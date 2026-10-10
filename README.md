@@ -28,6 +28,7 @@ npx skills add joaodinissf/jdf-skills -s <name>  # just one
 | [`frame-by-frame`](skills/frame-by-frame) | Makes motion graphics and images as code, then renders and looks at every frame. |
 | [`paper-figures`](skills/paper-figures) | Makes paper figures as editable sources (matplotlib, draw.io, TikZ) at column width, then checks and looks at them. |
 | [`recursive-planner`](skills/recursive-planner) | Plans the next step in detail and the rest coarsely, re-planning after every step. |
+| [`para-tidy`](skills/para-tidy) | Roasts a file tree, then tidies it with PARA one approved folder at a time, never overwriting or deleting. |
 
 ## Favourite skills
 
