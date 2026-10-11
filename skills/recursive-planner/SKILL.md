@@ -14,6 +14,10 @@ differently, a decision turns out not to matter — and the detail written for
 step five was written without it. Planning everything up front either wastes
 that detail or, worse, commits to it.
 
+This skill assumes the route is known and only its details are not. When it
+is unclear whether the destination can be reached at all, or from what, use
+`pathfinding-problem-solving` first to find a route.
+
 This skill keeps two resolutions at once. The **high-level plan** covers the
 whole route and stays coarse. The **step plan** covers only the next step and is
 concrete enough to execute. After each step, plan mode is re-entered on purpose:
