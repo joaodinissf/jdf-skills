@@ -70,6 +70,13 @@ comics, talks, letters — is a resource, not part of the area that prompted it.
 Give it its own resource folder (e.g. `Inspiration`), so the area stays about
 the obligation.
 
+## Reading queue and library are two stages
+
+A to-read pile and a reference library look alike and answer different
+questions: "what should I read next?" and "what do I know and might cite?".
+Keep them apart — the queue by priority (an area), the library by topic (a
+resource) — and move items from one to the other once read, or to the Trash.
+
 ## Labelled exceptions
 
 Some folders must not be forced into PARA: folders managed by an app, shared
@@ -82,6 +89,10 @@ their insides alone.
 - Date-first where order matters: `YYYY-MM-DD_Source_Original-name.ext`. Use the
   date of the event (visit, purchase, statement period) and say so in the house
   rules. Keep the original name or reference number after the prefix.
+- Papers, reports and books: `Year - Author - Title.ext`, so a folder sorts by
+  recency; undated items get `0000`. Never rename attachments inside a
+  reference-manager export (e.g. a folder with an `.rdf`) — the export links
+  them by path.
 - Plain, specific folder names. `Misc` is a confession.
 - Prefixes (`0-`, `1-`, `_`, `z_`) only for ordering, and used consistently.
 - Do not put amounts, account numbers or other sensitive details in file names.

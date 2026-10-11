@@ -141,13 +141,21 @@ For each folder or bucket:
    or move to Trash. Batch only the obvious.
 4. **Write a manifest**: one line per move, source → destination, including
    renames. Folders move as a unit when their internal structure is sound.
+   Before splitting any source folder across several destinations, list every
+   folder the plan would split and ask: a folder the user curated is usually
+   meant to stay bundled; only a generic dumping folder is split by topic.
 5. **Dry run.** Check, and show the result:
    - every source exists;
    - no destination exists (compare names case-insensitively and after Unicode
      normalisation, since many file systems treat those as the same name);
    - no two sources map to the same destination;
-   - every item in the folder is either in the manifest or listed as staying.
-   Any failure stops the batch before a single move.
+   - every item in the folder is either in the manifest or listed as staying;
+   - no operation's source or target lies inside a folder that another
+     operation moves (a later move into a folder that was already moved
+     recreates it as a stray empty shell).
+   Any failure stops the batch before a single move. Then show the **full
+   origin → target table in the conversation** and wait for a go for that
+   batch; a general "go ahead" for a session never replaces the per-batch go.
 6. **Execute** with a no-overwrite move, then verify each one: the source is
    gone and the destination exists. Log every completed move (source,
    destination) to an undo log outside the tree.
@@ -155,7 +163,10 @@ For each folder or bucket:
    folder. Hidden system files (e.g. Finder metadata) may be cleared first;
    nothing else.
 8. **Reconcile.** Count files before and after; they must match, minus anything
-   moved to Trash. Report discrepancies; do not explain them away.
+   moved to Trash. Report discrepancies; do not explain them away. Reconcile
+   against a **per-file inventory snapshot taken at the start of the pass**,
+   not against the undo log's whole history — a move made before the snapshot
+   otherwise counts twice.
 
 ### Removal
 
@@ -165,7 +176,18 @@ per item, after:
 - **exact duplicates** are proven byte-identical (a content comparison, not a
   shared name or size — `report copy.pdf` is often identical, two subtitle files
   of the same size often are not);
+- **same-content copies** that differ in bytes — a re-download with a different
+  "downloaded on" stamp, a re-save by a reference manager — are shown to the
+  user with what actually differs (metadata, page-by-page text, annotations) and
+  never removed without their decision;
 - the Trash is checked for a same-named item; if one exists, stop and ask.
+
+On a synced cloud folder, remove through the operating system's file manager
+(e.g. asking Finder to delete the item), so the sync client records a real
+deletion and can show its own confirmation. Moving the file into the Trash
+folder behind the client's back may be reverted by the client, and command-line
+trash tools may be refused outright. Some cloud deletions bypass the local
+Trash and are recoverable from the service's "deleted files" instead.
 
 ## 7. Record decisions
 
@@ -196,8 +218,16 @@ move).
 - **Unicode look-alikes.** Accented names may be stored decomposed on one system
   and composed on another; compare names after normalising.
 - **Sync activity feeds.** Many sync clients have no "moved" event; a move is
-  reported as a delete plus an add. Reconcile against the manifest, not the
-  feed.
+  reported as a delete plus an add. Feeds also fold bursts into "X and N more"
+  and may show only a sample of rows, so they are not a complete record.
+  Reconcile against the manifest and the service's file listing (including
+  deleted entries), not the feed.
+- **Re-runnable scripts.** A plan rebuilt from disk after some groups ran must
+  skip operations already done (source gone, target present). A renamer must
+  skip names already in the target form, or it will rename them again.
+- **Other agents in the same tree.** Another session may be writing into the
+  tree at the same time. Re-run the dry run immediately before each batch, and
+  report changes you did not make instead of absorbing them.
 - **Resurrected folders.** A sync client may recreate an empty folder you just
   removed while it catches up. Confirm it is empty, remove it again, move on.
 - **Counting after the fact.** A folder's file count measured after other files
