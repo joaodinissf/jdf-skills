@@ -29,6 +29,10 @@ npx skills add joaodinissf/jdf-skills -s <name>  # just one
 | [`paper-figures`](skills/paper-figures) | Makes paper figures as editable sources (matplotlib, draw.io, TikZ) at column width, then checks and looks at them. |
 | [`recursive-planner`](skills/recursive-planner) | Plans the next step in detail and the rest coarsely, re-planning after every step. |
 | [`para-tidy`](skills/para-tidy) | Roasts a file tree, then tidies it with PARA one approved folder at a time, never overwriting or deleting. |
+| [`pathfinding-problem-solving`](skills/pathfinding-problem-solving) | Finds an unknown route to a goal by searching from both ends, then verifies the chain link by link. |
+| [`handover`](skills/handover) | Writes a checked HANDOVER.md for the next session, and resumes from one by reporting what changed since. |
+| [`bookmark-session`](skills/bookmark-session) | Files a pointer to the session in Things 3, with the exact command to resume it. |
+| [`skill-browser`](skills/skill-browser) | Lists and loads skills from a library agents do not discover, only when you ask. |
 
 ## Favourite skills
 
