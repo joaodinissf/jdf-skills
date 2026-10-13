@@ -33,6 +33,7 @@ npx skills add joaodinissf/jdf-skills -s <name>  # just one
 | [`handover`](skills/handover) | Writes a checked HANDOVER.md for the next session, and resumes from one by reporting what changed since. |
 | [`bookmark-session`](skills/bookmark-session) | Files a pointer to the session in Things 3, with the exact command to resume it. |
 | [`skill-browser`](skills/skill-browser) | Lists and loads skills from a library agents do not discover, only when you ask. |
+| [`jdf-keepalive`](skills/jdf-keepalive) | Keeps 1Password signing your commits after you walk away, started from the agent's own session. |
 
 ## Favourite skills
 
