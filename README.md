@@ -34,6 +34,7 @@ npx skills add joaodinissf/jdf-skills -s <name>  # just one
 | [`bookmark-session`](skills/bookmark-session) | Files a pointer to the session in Things 3, with the exact command to resume it. |
 | [`skill-browser`](skills/skill-browser) | Lists and loads skills from a library agents do not discover, only when you ask. |
 | [`jdf-keepalive`](skills/jdf-keepalive) | Keeps 1Password signing your commits after you walk away, started from the agent's own session. |
+| [`gh-sitrep`](skills/gh-sitrep) | Counts what waits on you on GitHub (pull requests, issues, security alerts and red CI), and lists the items that need a decision. |
 
 ## Favourite skills
 
