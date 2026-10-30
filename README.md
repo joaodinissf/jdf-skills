@@ -36,6 +36,7 @@ npx skills add joaodinissf/jdf-skills -s <name>  # just one
 | [`jdf-keepalive`](skills/jdf-keepalive) | Keeps 1Password signing your commits after you walk away, started from the agent's own session. |
 | [`review-flow`](skills/review-flow) | Runs label-routed PR review between agents: set up a repo, or act as implementer, reviewer or orchestrator. |
 | [`gh-sitrep`](skills/gh-sitrep) | Counts what waits on you on GitHub (pull requests, issues, security alerts and red CI), and lists the items that need a decision. |
+| [`security-checklists`](skills/security-checklists) | Reviews OAuth clients and servers item by item against checklists whose citations were checked against the RFCs. |
 
 ## Favourite skills
 
