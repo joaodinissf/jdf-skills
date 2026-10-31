@@ -21,8 +21,14 @@ Any agent can take a role from any repository:
 /review-flow orchestrate  owner/repo     label hygiene, routing, merges with the human's OK, releases
 ```
 
-Options: `pr=<n>`, `every=5m`, `for=3h`, and `post` (default) or `draft` for
-the reviewer.
+Options: `pr=<n>`, `authors=mine|all|<login,...>`, `every=5m`, `for=3h`, and
+`post` (default) or `draft` for the reviewer, and `others=draft` (default) or
+`others=post` for pull requests someone else wrote.
+
+By default the reviewer and the orchestrator act only on your own pull
+requests, the ones authored by the account `gh` is signed in as. Bring others'
+in with `authors=` or by naming them with `pr=`; by default their reviews are
+shown to you before they are posted.
 
 The reviewer and the orchestrator poll until their time runs out, so you can
 start one and leave it. The reviewer refuses work its own model wrote. Only

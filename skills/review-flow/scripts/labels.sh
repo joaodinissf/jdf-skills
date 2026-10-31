@@ -5,7 +5,8 @@
 #   labels.sh request <owner/repo> <pr>     ask for a (new) review round
 #   labels.sh verdict <owner/repo> <pr> approved|changes-requested
 #   labels.sh clear   <owner/repo> <pr>     remove every review label
-#   labels.sh sweep   <owner/repo>          clear merged and closed PRs
+#   labels.sh sweep   <owner/repo> [mine|all|<login,...>]
+#                                           clear merged and closed PRs (default: mine)
 #
 # Each change to a pull request removes the other review labels in the same
 # call, so `review:requested` never sits beside a verdict.
@@ -14,7 +15,7 @@ set -euo pipefail
 export GH_PAGER=cat
 
 usage() {
-  sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 2
 }
 
@@ -61,8 +62,17 @@ case $cmd in
     set_label "$3" ""
     ;;
   sweep)
-    gh pr list --repo "$repo" --state all --limit 300 --json number,state,labels \
-      --jq '.[] | select(.state != "OPEN" and ([.labels[].name] | any(startswith("review:")))) | .number' |
+    [ $# -le 3 ] || usage
+    authors=${3:-mine}
+    case $authors in
+      all) filters=("") ;;
+      mine) filters=(--author=@me) ;;
+      *) IFS=, read -ra logins <<<"$authors"; filters=("${logins[@]/#/--author=}") ;;
+    esac
+    for filter in "${filters[@]}"; do
+      gh pr list --repo "$repo" --state all --limit 300 ${filter:+"$filter"} --json number,state,labels \
+        --jq '.[] | select(.state != "OPEN" and ([.labels[].name] | any(startswith("review:")))) | .number'
+    done | sort -u |
       while read -r pr; do set_label "$pr" ""; done
     ;;
   *) usage ;;
