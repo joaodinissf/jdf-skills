@@ -1,8 +1,8 @@
 ---
 name: review-flow
-description: Run label-routed pull-request review between coding agents on GitHub. One agent implements, a different model reviews, and an orchestrator keeps labels, merges and releases in order; three labels (review:requested, review:approved, review:changes-requested) carry the state. Modes set up a repository, or make this agent the implementer, the reviewer or the orchestrator, polling for its work. Use when the user invokes /review-flow, asks an agent to act as implementer, reviewer or orchestrator for a repository, or asks to set up agent review labels.
+description: Run label-routed pull-request review between coding agents on GitHub. One agent implements, a different model reviews, and an orchestrator keeps labels, merges and releases in order; three labels (review:requested, review:approved, review:changes-requested) carry the state. Modes set up a repository, or make this agent the implementer, the reviewer or the orchestrator, polling for its work. By default the reviewer and the orchestrator act only on the invoking user's own pull requests. Use when the user invokes /review-flow, asks an agent to act as implementer, reviewer or orchestrator for a repository, or asks to set up agent review labels.
 disable-model-invocation: true
-argument-hint: "<setup|implement|review|orchestrate> [owner/repo] [pr=<n>] [every=5m] [for=3h] [post|draft]"
+argument-hint: "<setup|implement|review|orchestrate> [owner/repo] [pr=<n>] [authors=mine|all|<login,...>] [every=5m] [for=3h] [post|draft] [others=draft|post]"
 ---
 
 # Review flow
@@ -21,12 +21,19 @@ agent polls for the labels that concern it.
 - **mode:** `setup`, `implement`, `review` or `orchestrate`.
 - **owner/repo:** the GitHub repository. Default: the current checkout's
   `origin`.
-- **pr=<n>:** limit the work to one pull request (repeatable).
+- **pr=<n>:** limit the work to one pull request (repeatable). Naming a pull
+  request also brings it into scope when someone else wrote it.
+- **authors=<scope>:** whose pull requests the reviewer and the orchestrator
+  act on. `mine` (the default) is the account `gh` is signed in as; `all` is
+  everyone; a comma-separated list names GitHub logins.
 - **every=<interval>:** the polling interval. Default `5m`.
 - **for=<duration>:** how long to keep polling. Defaults: reviewer `3h`,
   implementer `2h` per pull request, orchestrator `3h`.
 - **post** or **draft:** whether the reviewer posts on GitHub by itself
   (`post`, the default) or shows its draft to the human first (`draft`).
+- **others=<draft|post>:** the same choice for pull requests someone else
+  wrote. `draft` (the default) shows you the review and posts it only after
+  your OK; `post` posts it like your own.
 
 If the mode is missing, ask for it. Never guess a role.
 
@@ -52,6 +59,12 @@ Rules that every mode follows:
    [Model independence](#model-independence).
 6. **Nothing merges without a clean approval at the current head and the
    human's explicit OK** for that pull request, given at that moment.
+7. **Only the user's own pull requests, unless told otherwise.** The reviewer
+   and the orchestrator act on pull requests authored by the signed-in `gh`
+   account. Others' pull requests come into scope only through `authors=` or
+   `pr=`. Out of scope, do not review, label or propose them; mention one the
+   first time you see it with a review label, then leave it. In scope, a
+   review of someone else's pull request follows `others=`, not `post`.
 
 `scripts/labels.sh` takes `setup`, `request`, `verdict`, `clear` and `sweep`.
 Run it with no arguments for usage.
@@ -99,7 +112,7 @@ Never present a degraded run as a result.
    their colour and description; running it again changes nothing.
 3. Remove any other review-routing labels only if the human confirms them by
    name.
-4. `scripts/labels.sh sweep <owner/repo>`.
+4. `scripts/labels.sh sweep <owner/repo> <authors>`.
 5. Show the human this paragraph for the repository's agent instructions
    (`AGENTS.md`, `CLAUDE.md` or similar), and add it only if they agree:
 
@@ -162,13 +175,17 @@ draft ready; push to a branch someone else works on; review your own work.
 
 You judge other agents' pull requests. You never change them.
 
-**Each tick,** list the open pull requests labelled `review:requested`
-(limited to `pr=` if given):
+**Each tick,** list the open pull requests labelled `review:requested` in
+scope: by default your own, otherwise those of `authors=`, plus any named by
+`pr=` (only those, if `pr=` is given without `authors=`):
 
 ```sh
 gh pr list --repo <owner/repo> --label review:requested --state open \
-  --json number,title,headRefOid,author,isDraft
+  --author @me --json number,title,headRefOid,author,isDraft
 ```
+
+For a list of logins, run it once per `--author <login>`; for `all`, drop
+`--author`.
 
 For each one:
 
@@ -198,6 +215,10 @@ For each one:
      request changes on its own pull request; when it refuses, post the same
      body with `--comment` and state the verdict in its first line.
    - With `draft`, show the draft to the human and post only after their OK.
+   - On a pull request someone else wrote, `others=` decides instead:
+     `draft` (the default) or `post`.
+   - While a draft waits for the human, leave `review:requested` in place;
+     set the verdict label only once the review is posted.
 6. **Set the label** to match: `scripts/labels.sh verdict <owner/repo> <pr>
    approved` or `changes-requested`. An approval needs green required CI at
    that head; while CI is still running, wait for it on a later tick.
@@ -213,15 +234,15 @@ title, body or other labels; request human reviewers.
 You keep the flow moving for the human. You do not write the changes, and you
 do not review them.
 
-**Each tick:**
+**Each tick,** work only on pull requests in scope (rule 7):
 
 1. **Label hygiene.**
-   - Run `scripts/labels.sh sweep <owner/repo>`.
+   - Run `scripts/labels.sh sweep <owner/repo> <authors>`.
    - Fix any open pull request whose label contradicts its state: two review
      labels, a verdict older than the head, or `review:requested` on a pull
      request whose head has a fresh review marker.
    - Check a pull request's state before labelling it.
-2. **Routing.** Report pull requests that wait on someone:
+2. **Routing.** Report pull requests in scope that wait on someone:
    - approved and ready for the human;
    - changes requested with no push since;
    - requested for longer than two reviewer ticks with no review;
