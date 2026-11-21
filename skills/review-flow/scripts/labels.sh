@@ -44,7 +44,7 @@ case $cmd in
     gh label create review:requested --repo "$repo" --force --color FBCA04 \
       --description "Ready for a first review or a new round; replaces any previous review state."
     gh label create review:approved --repo "$repo" --force --color 0E8A16 \
-      --description "Current head approved with applicable CI green; manual and human merge gates still apply."
+      --description "Current head approved by review; CI and human merge gates still apply."
     gh label create review:changes-requested --repo "$repo" --force --color D93F0B \
       --description "Latest review has unresolved findings; re-request review after addressing them."
     ;;

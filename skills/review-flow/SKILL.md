@@ -10,9 +10,10 @@ argument-hint: "<setup|implement|review|orchestrate> [owner/repo] [pr=<n>] [auth
 *The labels say whose turn it is. The models keep each other honest.*
 
 Several agents work on one repository. One writes a pull request, another
-model reviews it, and a human merges. They do not talk to each other
-directly. The pull request's review label says whose turn it is, and every
-agent polls for the labels that concern it.
+model reviews it and publishes the review on GitHub, and a human merges. They
+do not talk to each other directly. The pull request's review label says whose
+turn it is, and every agent polls for the labels that concern it. The human is
+the merge gate, not an editor of the review.
 
 ## Arguments
 
@@ -29,20 +30,25 @@ agent polls for the labels that concern it.
 - **every=<interval>:** the polling interval. Default `5m`.
 - **for=<duration>:** how long to keep polling. Defaults: reviewer `3h`,
   implementer `2h` per pull request, orchestrator `3h`.
-- **post** or **draft:** whether the reviewer posts on GitHub by itself
-  (`post`, the default) or shows its draft to the human first (`draft`).
+- **post** or **draft:** whether the reviewer publishes on GitHub directly
+  (`post`, the default) or holds the text for the human first (`draft`).
+  `draft` is opt-in: without it, reviews on your own pull requests publish
+  without asking.
 - **others=<draft|post>:** the same choice for pull requests someone else
   wrote. `draft` (the default) shows you the review and posts it only after
-  your OK; `post` posts it like your own.
+  your OK; `post` posts it like your own. This default applies only to other
+  authors, never to your own pull requests.
 
-If the mode is missing, ask for it. Never guess a role.
+If `<mode>` (`setup`, `implement`, `review` or `orchestrate`) is missing, ask
+for it. Never guess a role. Every other option already has a default — do not
+ask for `post` versus `draft`.
 
 ## The labels
 
 | Label | Colour | Meaning |
 |---|---|---|
 | `review:requested` | `#FBCA04` | Ready for a first review or a new round; replaces any previous review state. |
-| `review:approved` | `#0E8A16` | Current head approved with applicable CI green; manual and human merge gates still apply. |
+| `review:approved` | `#0E8A16` | Current head approved by review; CI and human merge gates still apply. |
 | `review:changes-requested` | `#D93F0B` | Latest review has unresolved findings; re-request review after addressing them. |
 
 Rules that every mode follows:
@@ -55,8 +61,8 @@ Rules that every mode follows:
    closes removes it at once; the orchestrator sweeps for leftovers.
 4. **Labels are for agents. GitHub's ready state is for humans.** Only the
    human moves a draft to ready. Never undo the human's change.
-5. **The reviewer is never the implementer's model.** See
-   [Model independence](#model-independence).
+5. **The reviewer is never the implementer's model.** Check commit trailers
+   and `Assisted by` lines before reviewing; see [review](#review).
 6. **Nothing merges without a clean approval at the current head and the
    human's explicit OK** for that pull request, given at that moment.
 7. **Only the user's own pull requests, unless told otherwise.** The reviewer
@@ -163,7 +169,8 @@ after its last request:
 | You see | Do |
 |---|---|
 | `review:changes-requested` | Read the review, fix, push, request review again. |
-| `review:approved` | Stop watching it. Report it as ready for the human. |
+| `review:approved` with no failing or running CI on your head | Stop watching it. Report it as ready for the human. |
+| `review:approved` with CI still running | Keep watching until checks finish; if any fail, fix, push and request review again. |
 | Red CI on your head | Fix it, push, request review again. |
 | Merge conflict with its base | Rebase onto the base, push, request review again. |
 | A question from the human | Answer it, then go on watching. |
@@ -198,9 +205,17 @@ For each one:
    it.
 3. **Review at the head.** Fetch `pull/<n>/head` and read the diff against its
    base, the description, the linked issue, earlier review threads and CI.
-   Check that every earlier finding is fixed or answered.
+   Check that every earlier finding is fixed or answered. Always review the
+   full diff regardless of CI state — never wait for CI to finish or skip the
+   code review because a check failed.
 4. **Write the review.**
-   - Lead with the verdict in one sentence.
+   - Lead with the verdict in one sentence: approve if there are no P1 or P2
+     findings and no failing check on the head; request changes otherwise.
+   - Any failing (red) check on the head is enough to request changes, even on
+     a clean diff — cite the failing check alongside any code findings.
+   - Pending, skipped or absent checks, and unreadable branch-protection
+     settings, are not findings and never delay or block an approval. Do not
+     wait for green CI before finishing or posting the review.
    - Number the findings. Give each a `file:line`, the concrete failure (this
      input, this state, this wrong result) and a severity: P1 blocks the
      merge, P2 should be fixed, P3 is optional.
@@ -208,20 +223,28 @@ For each one:
    - Keep it short. Report only what you checked; mark a doubt as a doubt.
    - End with the hidden marker `<!-- review-flow head=<full sha> -->` and
      the attribution line.
-5. **Post or draft.**
-   - With `post` (the default), post one review per pull request:
-     `gh pr review <n> --approve` if there are no P1 or P2 findings,
-     `--request-changes` otherwise. GitHub does not let an account approve or
-     request changes on its own pull request; when it refuses, post the same
-     body with `--comment` and state the verdict in its first line.
-   - With `draft`, show the draft to the human and post only after their OK.
-   - On a pull request someone else wrote, `others=` decides instead:
-     `draft` (the default) or `post`.
-   - While a draft waits for the human, leave `review:requested` in place;
-     set the verdict label only once the review is posted.
-6. **Set the label** to match: `scripts/labels.sh verdict <owner/repo> <pr>
-   approved` or `changes-requested`. An approval needs green required CI at
-   that head; while CI is still running, wait for it on a later tick.
+5. **Publish (or draft if asked).**
+   - In `post` mode (the default for your own pull requests), **publish on
+     GitHub in the same turn you finish the review.** Do not print the review
+     and wait for `"y"`, `"post"` or confirmation — running `review` without
+     `draft` is your authorization to publish.
+   - On your own pull request, GitHub does not allow self-approval or
+     self-request-changes, so post directly with
+     `gh pr review <n> --comment` and state the verdict in the first line.
+     Never treat that restriction as a reason to hold the review as a draft.
+   - On someone else's pull request, `others=` decides (`draft` by default, or
+     `post`). When posting on someone else's pull request, use
+     `gh pr review <n> --approve` or `--request-changes` (falling back to
+     `--comment` if GitHub refuses).
+   - Only when `draft` was explicitly passed, or on someone else's pull
+     request under `others=draft`, show the draft to the human and post only
+     after their OK. While a draft waits, leave `review:requested` in place
+     and set the verdict label only once the review is posted.
+6. **Set the label** right after posting:
+   `scripts/labels.sh verdict <owner/repo> <pr> approved` or
+   `changes-requested`, matching your verdict. Do not delay setting
+   `review:approved` for running, skipped, absent or unknown CI checks — only
+   a failing check on the head turns the verdict to `changes-requested`.
 
 If the head changes while you review, discard the review and start again on
 the next tick.
@@ -243,7 +266,7 @@ do not review them.
      request whose head has a fresh review marker.
    - Check a pull request's state before labelling it.
 2. **Routing.** Report pull requests in scope that wait on someone:
-   - approved and ready for the human;
+   - approved (with no failing or running CI) and ready for the human;
    - changes requested with no push since;
    - requested for longer than two reviewer ticks with no review;
    - red CI or merge conflicts.
