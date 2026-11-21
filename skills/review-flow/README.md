@@ -9,7 +9,7 @@ order, and a human merges. Three labels carry the state:
 | Label | Colour | Meaning |
 |---|---|---|
 | `review:requested` | `#FBCA04` | Ready for a first review or a new round. |
-| `review:approved` | `#0E8A16` | Current head approved with CI green. |
+| `review:approved` | `#0E8A16` | Current head approved by review; CI and human merge gates still apply. |
 | `review:changes-requested` | `#D93F0B` | Latest review has unresolved findings. |
 
 Any agent can take a role from any repository:
@@ -26,9 +26,11 @@ Options: `pr=<n>`, `authors=mine|all|<login,...>`, `every=5m`, `for=3h`, and
 `others=post` for pull requests someone else wrote.
 
 By default the reviewer and the orchestrator act only on your own pull
-requests, the ones authored by the account `gh` is signed in as. Bring others'
-in with `authors=` or by naming them with `pr=`; by default their reviews are
-shown to you before they are posted.
+requests, the ones authored by the account `gh` is signed in as, and the
+reviewer publishes directly without asking for confirmation. Pass `draft` to
+review the text first. Bring others' pull requests in with `authors=` or by
+naming them with `pr=`; by default their reviews are shown to you before they
+are posted.
 
 The reviewer and the orchestrator poll until their time runs out, so you can
 start one and leave it. The reviewer refuses work its own model wrote. Only
